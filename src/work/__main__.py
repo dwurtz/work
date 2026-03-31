@@ -385,11 +385,17 @@ def main() -> None:
     # Ensure work home exists
     WORK_HOME.mkdir(parents=True, exist_ok=True)
 
+    def _run(coro):
+        try:
+            asyncio.run(coro)
+        except KeyboardInterrupt:
+            console.print("\n[dim]Goodbye.[/dim]")
+
     match args.command:
         case None:
-            asyncio.run(cmd_interactive(args))
+            _run(cmd_interactive(args))
         case "monitor":
-            asyncio.run(cmd_monitor(args))
+            _run(cmd_monitor(args))
         case "scope":
             cmd_scope(args)
         case "goals":
@@ -399,7 +405,7 @@ def main() -> None:
         case "memory":
             cmd_memory(args)
         case "standup":
-            asyncio.run(cmd_standup(args))
+            _run(cmd_standup(args))
         case "status":
             cmd_status(args)
         case _:
