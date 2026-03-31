@@ -140,38 +140,45 @@ Return ONLY the JSON array."""
 
         Returns {summary, app, key_details}.
         """
-        image_bytes = Path(image_path).read_bytes()
+        # Resize image to reduce payload (max 1280px wide)
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(image_path)
+            if img.width > 1280:
+                ratio = 1280 / img.width
+                img = img.resize((1280, int(img.height * ratio)), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=75)
+            image_bytes = buf.getvalue()
+            mime = "image/jpeg"
+        except Exception:
+            image_bytes = Path(image_path).read_bytes()
+            mime = "image/png"
 
         prompt = (
-            f"User goals:\n{goals_text}\n\n"
-            "What app and content is shown in this screenshot? "
-            "Be specific about any data, names, schedules, URLs, or numbers visible.\n\n"
-            "Reply with JSON:\n"
-            '{"summary": "one sentence description", '
-            '"app": "app name", '
-            '"key_details": "specific names, dates, numbers, URLs visible"}'
+            "Describe this screenshot in one sentence. "
+            "Name the app, what content is visible, and any specific names, dates, numbers, or URLs you can see. "
+            "Be concise — max 2 sentences."
         )
 
         resp = await self.client.aio.models.generate_content(
             model=VISION_MODEL,
             contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                types.Part.from_bytes(data=image_bytes, mime_type=mime),
                 prompt,
             ],
             config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                max_output_tokens=300,
+                max_output_tokens=500,
                 temperature=0.2,
             ),
         )
-        try:
-            result = json.loads(resp.text)
-        except (json.JSONDecodeError, ValueError):
-            result = _parse_json(resp.text)
 
-        if not isinstance(result, dict):
-            return {"summary": str(result)[:150], "app": "", "key_details": ""}
-        return result
+        if not resp.text:
+            log.warning("Vision returned empty response")
+            return {"summary": "Screenshot analysis failed", "app": "", "key_details": ""}
+
+        return {"summary": resp.text.strip()[:500], "app": "", "key_details": ""}
 
     # ------------------------------------------------------------------
     # Action prediction
