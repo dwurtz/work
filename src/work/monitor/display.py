@@ -6,8 +6,9 @@ from collections import deque
 from datetime import datetime
 
 from rich.console import Console, Group
+from rich.layout import Layout
+from rich.live import Live
 from rich.panel import Panel
-from rich.table import Table
 from rich.text import Text
 
 from work.signals import Signal
@@ -32,21 +33,37 @@ CONFIDENCE_COLORS = {
 
 
 class MonitorDisplay:
-    """Rich-based terminal display showing live signal flow."""
+    """Rich-based terminal display showing live signal flow using Live for in-place updates."""
 
     def __init__(self, max_log: int = 50) -> None:
         self.console = Console()
         self.signals_log: deque[str] = deque(maxlen=max_log)
         self.matches_log: deque[str] = deque(maxlen=max_log)
         self.phase: str = "IDLE"
-        self._last_render: datetime | None = None
+        self._live: Live | None = None
+
+    def start(self) -> None:
+        """Start the Live display."""
+        self._live = Live(
+            self._build(),
+            console=self.console,
+            refresh_per_second=1,
+            screen=True,
+        )
+        self._live.start()
+
+    def stop(self) -> None:
+        """Stop the Live display."""
+        if self._live:
+            self._live.stop()
+            self._live = None
 
     def show_signal(self, signal: Signal) -> None:
         """Log a newly collected signal."""
         color = SOURCE_COLORS.get(signal.source, "white")
         ts = signal.timestamp.strftime("%H:%M:%S")
         self.signals_log.append(
-            f"[{color}][{ts}] [{signal.source}][/{color}] "
+            f"[{color}][{ts}][/{color}]  "
             f"{signal.sender}: {signal.text[:100]}"
         )
 
@@ -77,9 +94,12 @@ class MonitorDisplay:
         self.phase = phase
 
     def render(self) -> None:
-        """Render the full display to the terminal."""
-        self.console.clear()
+        """Update the Live display."""
+        if self._live:
+            self._live.update(self._build())
 
+    def _build(self) -> Group:
+        """Build the full display layout."""
         # Header
         phase_colors = {
             "IDLE": "dim",
@@ -95,26 +115,26 @@ class MonitorDisplay:
         header.append(self.phase, style=phase_style)
         header.append(f"  |  signals: {len(self.signals_log)}", style="dim")
         header.append(f"  |  matches: {len(self.matches_log)}", style="dim")
-        self.console.print(Panel(header, border_style="bright_blue"))
+
+        parts = [Panel(header, border_style="bright_blue")]
 
         # Signals panel
-        if self.signals_log:
-            signals_text = Text()
-            for line in list(self.signals_log)[-15:]:
-                signals_text.append_text(Text.from_markup(line))
-                signals_text.append("\n")
-            self.console.print(
-                Panel(signals_text, title="Signals", border_style="cyan", height=18)
-            )
+        signals_text = Text()
+        for line in list(self.signals_log)[-15:]:
+            signals_text.append_text(Text.from_markup(line))
+            signals_text.append("\n")
+        parts.append(
+            Panel(signals_text, title="Signals", border_style="cyan", height=18)
+        )
 
-        # Matches panel
+        # Reasoning panel
         if self.matches_log:
             matches_text = Text()
             for line in list(self.matches_log)[-10:]:
                 matches_text.append_text(Text.from_markup(line))
                 matches_text.append("\n")
-            self.console.print(
+            parts.append(
                 Panel(matches_text, title="Reasoning", border_style="green", height=20)
             )
 
-        self._last_render = datetime.now()
+        return Group(*parts)

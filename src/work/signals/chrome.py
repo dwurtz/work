@@ -10,30 +10,24 @@ from work.signals.types import Signal
 
 log = logging.getLogger(__name__)
 
-_APPLESCRIPT = '''
+# Get all tabs
+_ALL_TABS_SCRIPT = '''
 tell application "Google Chrome"
     set tabList to {}
-    set activeWindowIndex to 0
-    set activeTabIndex to 0
-    try
-        set activeWindowIndex to index of front window
-        set activeTabIndex to active tab index of front window
-    end try
-    set winIndex to 0
     repeat with w in every window
-        set winIndex to winIndex + 1
-        set tabIndex to 0
         repeat with t in every tab of w
-            set tabIndex to tabIndex + 1
-            set isActive to "0"
-            if winIndex = activeWindowIndex and tabIndex = activeTabIndex then
-                set isActive to "1"
-            end if
-            set end of tabList to isActive & " ||| " & (title of t) & " ||| " & (URL of t)
+            set end of tabList to (title of t) & " ||| " & (URL of t)
         end repeat
     end repeat
     set AppleScript's text item delimiters to "\\n"
     return tabList as text
+end tell
+'''
+
+# Get active tab directly
+_ACTIVE_TAB_SCRIPT = '''
+tell application "Google Chrome"
+    return (URL of active tab of front window)
 end tell
 '''
 
@@ -42,23 +36,37 @@ def collect_chrome_tabs() -> list[Signal]:
     """Get open Chrome tab titles and URLs via osascript, with active tab marked."""
     results: list[Signal] = []
     try:
+        # Get active tab URL first
+        active_url = ""
+        try:
+            r_active = subprocess.run(
+                ["osascript", "-e", _ACTIVE_TAB_SCRIPT],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if r_active.returncode == 0:
+                active_url = r_active.stdout.strip()
+        except Exception:
+            pass
+
+        # Get all tabs
         r = subprocess.run(
-            ["osascript", "-e", _APPLESCRIPT],
+            ["osascript", "-e", _ALL_TABS_SCRIPT],
             capture_output=True,
             text=True,
             timeout=10,
         )
         if r.returncode != 0 or not r.stdout.strip():
             return results
+
         now = datetime.now()
         for line in r.stdout.strip().split("\n"):
-            parts = line.split(" ||| ")
-            if len(parts) < 3:
-                continue
-            is_active = parts[0].strip() == "1"
-            title = parts[1].strip()
-            url = parts[2].strip()
+            parts = line.split(" ||| ", 1)
+            title = parts[0].strip()
+            url = parts[1].strip() if len(parts) > 1 else ""
             id_key = url or title
+            is_active = url == active_url and active_url != ""
             label = f"[ACTIVE] {title}" if is_active else title
             results.append(
                 Signal(

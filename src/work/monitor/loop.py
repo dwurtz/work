@@ -48,6 +48,7 @@ class MonitorLoop:
             from work.monitor.display import MonitorDisplay
 
             self.display = MonitorDisplay()
+            self.display.start()
 
         self.running = True
         log.info("Monitor loop starting (interactive=%s)", interactive)
@@ -66,6 +67,8 @@ class MonitorLoop:
         except asyncio.CancelledError:
             log.info("Monitor loop cancelled")
         finally:
+            if self.display:
+                self.display.stop()
             self.running = False
 
     async def _signal_loop(self) -> None:
