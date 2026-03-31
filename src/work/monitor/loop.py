@@ -158,14 +158,21 @@ class MonitorLoop:
             self.phase = "IDLE"
             return
 
-        self.matches_found += len(matches)
+        # Show ALL results in display (matches and non-matches with reasoning)
+        actual_matches = [m for m in matches if m.get("matched", True) and m.get("confidence", "none") != "none"]
+        self.matches_found += len(actual_matches)
         self.last_match_time = datetime.now(timezone.utc)
-        log.info("Found %d matches", len(matches))
+        log.info("Found %d matches out of %d signals", len(actual_matches), len(matches))
 
-        # Route each match to the correct scope's hot buffer
+        # Show everything in display (including skips with reasoning)
+        if self.display:
+            for match in matches:
+                self.display.show_match(match)
+
+        # Route actual matches to the correct scope's hot buffer
         high_confidence_scopes: set[tuple[str, str | None]] = set()
 
-        for match in matches:
+        for match in actual_matches:
             scope_key = self._parse_scope(match.get("scope", "personal"))
             try:
                 store = self.scope_manager.get_store(*scope_key)
@@ -183,9 +190,6 @@ class MonitorLoop:
             if match.get("action"):
                 entry += f" -> ACTION: {match['action']}"
             store.append_to_hot_buffer(entry)
-
-            if self.display:
-                self.display.show_match(match)
 
             if match.get("confidence") == "high":
                 high_confidence_scopes.add(scope_key)

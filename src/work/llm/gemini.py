@@ -70,14 +70,18 @@ GOALS (organized by scope -- personal, projects/<name>, org/<name>):
 NEW SIGNALS:
 {signals_text}
 
-For each signal that relates to a goal, output a JSON array of match objects:
+For EVERY signal, output a JSON object explaining your reasoning. Include both matches and non-matches so the user can see what the system is thinking.
+
+Output a JSON array — one entry per signal:
 [
   {{
     "signal_summary": "brief description of the signal",
     "source": "imessage|whatsapp|chrome|clipboard|screen|calendar|email|observation",
-    "scope": "personal|projects/<project_name>|org/<org_name>",
-    "goal": "exact goal name from the list above",
-    "confidence": "low|medium|high",
+    "matched": true,
+    "reasoning": "1-2 sentence explanation of WHY this matches or doesn't match any goal",
+    "scope": "personal|projects/<project_name>|org/<org_name> (or null if no match)",
+    "goal": "exact goal name from the list above (or null if no match)",
+    "confidence": "low|medium|high|none",
     "action": "suggested next action if confidence is medium or high, else null"
   }}
 ]
@@ -97,7 +101,8 @@ IMPORTANT RULES:
 - A person listed under a specific goal almost certainly produces signals for THAT goal.
 - Look for commitment-action gaps: someone said they'd do X but no evidence of follow-through.
 - Look for behavioral patterns: repeated viewing without editing may indicate being blocked.
-- If no signals match any goal, return an empty array: []
+- If no signals match any goal, still return an entry for each with matched=false and your reasoning.
+- ALWAYS include reasoning — this is shown to the user so they can see what the system is thinking.
 
 Return ONLY the JSON array."""
 

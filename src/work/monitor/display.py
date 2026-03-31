@@ -51,16 +51,26 @@ class MonitorDisplay:
         )
 
     def show_match(self, match: dict) -> None:
-        """Log a signal-to-goal match."""
-        conf = match.get("confidence", "?")
-        color = CONFIDENCE_COLORS.get(conf, "white")
-        goal = match.get("goal", "?")
-        summary = match.get("signal_summary", "")[:80]
-        scope = match.get("scope", "?")
-        self.matches_log.append(
-            f"[{color}][{conf.upper()}][/{color}] "
-            f"[bold]{goal}[/bold] ({scope}): {summary}"
-        )
+        """Log a signal-to-goal match (or non-match with reasoning)."""
+        matched = match.get("matched", True)
+        conf = match.get("confidence", "none")
+        reasoning = match.get("reasoning", "")
+        summary = match.get("signal_summary", "")[:60]
+
+        if matched and conf != "none":
+            color = CONFIDENCE_COLORS.get(conf, "white")
+            goal = match.get("goal", "?")
+            scope = match.get("scope", "?")
+            self.matches_log.append(
+                f"[{color}][{conf.upper()}][/{color}] "
+                f"[bold]{goal}[/bold] ({scope}): {summary}\n"
+                f"  [dim italic]{reasoning}[/dim italic]"
+            )
+        else:
+            self.matches_log.append(
+                f"[dim][ SKIP ] {summary}[/dim]\n"
+                f"  [dim italic]{reasoning}[/dim italic]"
+            )
 
     def show_status(self, phase: str) -> None:
         """Update the current phase."""
@@ -104,7 +114,7 @@ class MonitorDisplay:
                 matches_text.append_text(Text.from_markup(line))
                 matches_text.append("\n")
             self.console.print(
-                Panel(matches_text, title="Matches", border_style="green", height=13)
+                Panel(matches_text, title="Reasoning", border_style="green", height=20)
             )
 
         self._last_render = datetime.now()
