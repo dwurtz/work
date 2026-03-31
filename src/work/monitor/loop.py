@@ -265,6 +265,10 @@ class MonitorLoop:
                 if match.get("proposed_goal"):
                     pg = match["proposed_goal"]
                     log.info("Goal proposed: %s", pg.get("name", "?"))
+                    self._notify(
+                        f"New goal detected: {pg.get('name', '?')}",
+                        pg.get("description", ""),
+                    )
 
         # Route actual matches to the correct scope's hot buffer
         high_confidence_scopes: set[tuple[str, str | None]] = set()
@@ -296,6 +300,10 @@ class MonitorLoop:
 
             if match.get("confidence") == "high":
                 high_confidence_scopes.add(scope_key)
+                self._notify(
+                    f"[{match.get('goal', '?')}]",
+                    match.get("action") or match.get("signal_summary", ""),
+                )
 
         # Trigger action prediction for high-confidence scopes
         self.phase = "PREDICTING"
@@ -374,6 +382,41 @@ class MonitorLoop:
             parts = scope_str.split("/", 1)
             return (parts[0], parts[1])
         return (scope_str, None)
+
+    @staticmethod
+    def _notify(title: str, body: str) -> None:
+        """Send a macOS notification."""
+        import subprocess
+        try:
+            script = (
+                f'display notification "{body[:200]}" '
+                f'with title "work" subtitle "{title[:100]}" sound name "Glass"'
+            )
+            subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True, timeout=5,
+            )
+        except Exception:
+            log.exception("Notification failed")
+
+    @staticmethod
+    def _send_imessage(phone: str, message: str) -> None:
+        """Send an iMessage to a phone number."""
+        import subprocess
+        try:
+            script = f'''
+            tell application "Messages"
+                set targetService to 1st account whose service type = iMessage
+                set targetBuddy to participant "{phone}" of targetService
+                send "{message}" to targetBuddy
+            end tell
+            '''
+            subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True, timeout=10,
+            )
+        except Exception:
+            log.exception("iMessage send failed")
 
     def stop(self) -> None:
         self.running = False
