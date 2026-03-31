@@ -123,10 +123,6 @@ async def cmd_monitor(args: argparse.Namespace) -> None:
             )
         )
 
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, monitor.stop)
-    loop.add_signal_handler(signal.SIGTERM, monitor.stop)
-
     await monitor.run(interactive=interactive)
 
 

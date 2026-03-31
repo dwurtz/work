@@ -1,115 +1,111 @@
 # The Language of Productivity
 
-Most of what you do at work doesn't matter.
+You spend an hour reviewing a pull request on a service that, in a meeting you weren't invited to, was decided to be deprecated. You draft an investor update using metrics your co-founder quietly revised last night. You prepare for a customer call that got rescheduled, but the notification went to a Slack channel you muted.
 
-That's not a judgment — it's a structural problem. You spend an hour reviewing a pull request on a service that, in a meeting you weren't invited to, was just decided to be deprecated. You draft a detailed investor update using metrics from a model your co-founder quietly revised last night. You prepare for a customer call that got rescheduled, but nobody told you because the notification went to a Slack channel you muted.
+None of this is laziness. The work was real. The effort was genuine. It just wasn't connected to what actually needed to happen.
 
-None of this is laziness. It's misalignment. The work was real. The effort was genuine. It just wasn't connected to what actually needed to happen.
-
-We don't have a productivity problem. We have a goal alignment problem.
+We don't have a productivity problem. We have a goal alignment problem. And it doesn't live at the level of the individual — it lives in the space between people, projects, and the organizations that contain them.
 
 ## A new category
 
-This isn't about building a better task manager or a smarter calendar. Those tools assume you already know what to work on and just need help organizing it. But the hard problem isn't organization — it's knowing whether the thing you're doing right now is the thing that matters most.
+This isn't about building a better task manager. Task managers assume you already know what to work on. The hard problem isn't organization — it's knowing whether the thing you're doing right now is the thing that matters most.
 
-No existing tool answers that question. Project management tools track what was planned. Time trackers measure what was done. Communication tools surface what's urgent. None of them connect activity to intention. None of them can tell you that the PR you're reviewing is for a system the team decided to kill, because the decision happened in a thread you didn't see and the project board hasn't been updated yet.
+No existing tool answers that question. Project management tools track what was planned. Time trackers measure what was done. Communication tools surface what's urgent. None of them connect activity to intention. None of them can tell you that the PR you're reviewing is for a system the team decided to kill, because the decision happened in a thread you didn't see and the project board hasn't been updated.
 
-We're not competing with productivity tools. We're building something that doesn't exist yet: a system that understands what you're trying to accomplish and can tell you, in real time, whether what you're doing right now is getting you there.
+We're inventing something that doesn't exist yet: a system that understands what you're trying to accomplish — and what your team and organization are trying to accomplish — and can tell you, in real time, whether it all lines up.
 
-## Goals are the underbelly
+## Goals as the underbelly
 
-Goals are the invisible infrastructure beneath all useful work. When goals are clear and shared, teams move fast. When they're ambiguous or misaligned, you get a room full of smart people pulling in different directions — each one productive by their own measure, collectively going nowhere.
+Goals are the invisible infrastructure beneath all useful work.
 
-Think about what happens when goals are working:
+When goals are clear and shared, teams move fast. A developer reviews a PR knowing the feature ships Thursday because sales has a demo Friday, which she knows because the project goal is explicit. She catches a bug not because she's thorough but because she understands what the code needs to do in the demo and this edge case would break it. The goal shaped her judgment.
 
-A developer opens a PR. She knows the feature ships Thursday because the sales team has a demo Friday, which she knows because the project goal is explicit: close the Acme deal by end of month. She reviews the diff with that context. She catches a bug not because she's thorough but because she understands what the code needs to do in the demo and this edge case would break it. The goal shaped her judgment.
+When goals are absent or misaligned, you get a room full of smart people pulling in different directions — each one productive by their own measure, collectively going nowhere. The developer approves a well-written PR on a service that's about to be deprecated. She spent an hour not because she was careless, but because nobody connected her work to the team's current direction.
 
-Now think about what happens when goals are absent:
-
-The same developer reviews a different PR. It's well-written code on a well-architected service. She approves it. Two days later she learns in standup that the team decided to deprecate that service and migrate to a new one. The PR was dead on arrival. She spent an hour — not because she was careless, but because nobody connected her work to the team's current direction. The goal existed, but it was locked in someone else's head.
-
-The difference between these two scenarios isn't talent or effort. It's whether goals were legible to the person doing the work.
+The difference isn't talent or effort. It's whether goals were legible to the person doing the work.
 
 ## Inferring goals from behavior
 
-Here's the uncomfortable truth about goal-setting: people don't do it. OKRs get written once a quarter and forgotten by week three. Goal-tracking apps collect dust. The annual planning doc lives in a Google Drive folder nobody opens.
+Here's the uncomfortable truth: people don't write their goals down. OKRs get written once a quarter and forgotten by week three. Goal-tracking apps collect dust. This isn't a discipline problem — it's a design problem. Writing goals is overhead, maintaining them is more overhead, and the return flows mostly to managers and dashboards, not to the person doing the work.
 
-This isn't a discipline problem. It's a design problem. Writing goals down is overhead. Maintaining them is more overhead. And the return on that overhead flows mostly to managers and dashboards, not to the person doing the work. So people rationally skip it.
+But goals still exist. They live in behavior.
 
-But goals still exist. They just live in behavior, not documents.
+You opened the same Linear ticket four times this week without making progress — that's a blocked goal. You have three calendar events with "fundraise" in the title — that's an active goal. You drafted an email to five investors and didn't send it — that's a goal with friction. Past conversations carry signal too: "I'll have the pitch deck done by Wednesday" is a commitment with a deadline and an audience.
 
-You opened the same Linear ticket four times this week without making progress — that's a signal of a blocked goal. You have three calendar events with "fundraise" in the title — that's a signal of an active goal. You drafted an email to five investors and didn't send it — that's a signal of a goal with friction. You keep switching between a spreadsheet and a slide deck — that's a signal of two goals competing for your attention.
+The system should infer goals from these signals, not ask you to type them into a form. The things you do, the messages you send, the tabs you keep open, the documents you revisit — these are all evidence of what you're trying to accomplish.
 
-The system should infer goals from these signals, not ask you to type them into a form. The things you do, the messages you send, the tabs you keep open, the documents you revisit — these are all evidence of what you're trying to accomplish. A system that can read this evidence can maintain a living model of your goals without you lifting a finger.
+## Every entity is an agent. Every agent is the same shape.
 
-Past conversations carry goal signal too. When you told your co-founder "I'll have the pitch deck done by Wednesday," that's a commitment — a goal with a deadline and an audience. When your manager said "let's deprioritize the dashboard rewrite," that's a goal being retired. These utterances, scattered across Slack, iMessage, email, and meetings, are the raw material of goal inference. The system should be listening.
+This is the core idea. Not just individuals — projects and organizations are agents too, and they all have the same structure:
 
-## The three-file system
+- **goals.md** — what this entity is trying to accomplish
+- **memory.md** — what this entity has observed, filtered through its goals
+- **actions.md** — what this entity should do next, derived from memory
 
-We landed on three files as the core primitive. Not a database, not an API — three markdown files per scope:
+Three files. One loop. Every scope.
 
-- **goals.md** — what I'm trying to accomplish. The north stars.
-- **actions.md** — what I'm doing right now. Current commitments, predicted next steps.
-- **memory.md** — what I know. Facts, decisions, context that persists.
+An individual agent observes your desktop — iMessage, WhatsApp, Chrome tabs, clipboard, screenshots. It matches signals against your goals, records what matters, and derives next actions.
 
-Goals give meaning. Actions give direction. Memory gives context. Together, they form a complete picture of a person's relationship to their work.
+A project agent does the same thing, but its signals come from the individual agents on the project. When Sarah says "I'll send the vendor proposal by Friday" in a meeting, her individual agent records it. That memory pushes up to the project agent, which now knows there's a commitment with a deadline. When Friday passes with no proposal, the project agent notices the gap and generates an action: flag the delay.
 
-These repeat at three scopes: personal, project, and org. Your personal scope knows about your kids' schedules and your health goals. Your project scope knows about the fundraise and the product roadmap. Your org scope knows about the hiring plan and the company strategy.
+An organization agent sits above projects. Its signals come from project agents. It sees cross-project patterns — two projects competing for the same engineer's time, a strategic shift that invalidates a project's assumptions, a dependency that's creating systemic risk. It doesn't see individual-level detail. It sees what matters at the organizational level.
 
-The power is in the repetition. The same three files, the same structure, at every level. A signal comes in — an iMessage from Coach Rob about Tuesday gymnastics — and the system routes it to `personal/goals.md` because Coach Rob is listed as a key person under the kids' schedule goal. A Slack message from Jamil about the Gemini API routes to `projects/kinsol/actions.md`. An email from an investor routes to both the project fundraise goal and the org-level funding goal.
+The same three files. The same observe-match-remember-decide loop. Applied recursively at every level of scope.
 
-If you've used Claude Code, you've seen a version of this. `CLAUDE.md` is a context file that tells an AI agent about a codebase — conventions, architecture, preferences. We took that pattern and extended it from code to life. Where `CLAUDE.md` answers "how does this codebase work?", the three-file system answers "what is this person trying to do, what do they know, and what should they do next?"
+## Memories flow up. Goals flow down.
 
-## Why alignment breaks
+The hierarchy isn't just structural — it's a communication protocol. Information flows in two directions:
 
-Misalignment isn't malice. It's information asymmetry.
+**Memories flow up.** An individual observes something goal-relevant and records it. If it matters to the project, it gets pushed up to the project's memory. If it matters to the organization, it gets pushed further. Each push is filtered — only facts propagate. "Sarah seems stressed" doesn't flow up. "Vendor proposal delayed 3 days" does.
 
-The developer reviewing the dead PR didn't lack skill or motivation. She lacked a single piece of context: the deprecation decision. That context existed — it was in a Slack thread, probably in someone's head, maybe in meeting notes nobody reads. But it wasn't connected to her work.
+**Goals flow down.** The organization sets strategic direction. Projects translate that into milestones. Individuals receive actions derived from project goals. When the org goal shifts because a competitor launched, the shift propagates down through project goals into individual actions. The developer who was about to review that PR on the deprecated service gets a signal: this goal has changed, this work is no longer aligned.
 
-This happens constantly. A designer spends a week on a flow that product already decided to cut. An engineer optimizes a query that's about to be replaced by a new data pipeline. A salesperson pitches a feature that was removed in the last release. In every case, someone knew. The information was in the system. It just wasn't in the right place at the right time.
+There are five operations in this protocol:
 
-Goals, when they're legible and current, are the connective tissue. If the deprecation decision had updated the project's `goals.md` — even a single line: "Migrating off legacy auth service, no new work" — anyone looking at that scope would know. Not because they were told in a meeting. Not because they happened to be in the right Slack channel. Because the goal was written down and the system kept it current.
+1. **Push Memory** — individual to project, project to org. "Sarah committed to X by Friday."
+2. **Push Action** — org to project, project to individual. "You need to review the Acme terms."
+3. **Peer Query** — same level. "Status on vendor proposal?"
+4. **Escalate** — any agent to its parent. "Project A is at risk — 3 blockers and a missed milestone."
+5. **Confirm** — any agent to any agent. "Vendor proposal received. Commitment resolved."
 
-## The compaction loop
+This is how a commitment travels through the system: Sarah's agent hears her make a promise in a meeting. It records the commitment. It pushes the memory up to the project agent. The project agent creates an action to monitor the deadline. When the deadline passes without delivery, the project agent escalates to the org agent. At every step, the same three files, the same loop.
 
-Raw signals are noise. You can't just log everything and hope someone reads it.
+## Privacy is structural
 
-The system captures signals every two seconds — messages, tabs, clipboard, screenshots, app switches. That's thousands of data points per hour. Most of them are meaningless: you switched to Chrome, you scrolled, you copied a URL, you switched back.
+When memories flow between agents, sensitive content must never propagate. This isn't a policy — it's built into the architecture. The filter runs on every write to every memory.md.
 
-The compaction loop turns perception into knowledge. Every hour, an LLM reads the hot buffer of raw signals against your goals and memory, and makes a judgment call: what here is actually worth remembering? A commitment was made — that goes into memory. A deadline was mentioned — that updates actions. You browsed the same page four times without acting — that's a pattern worth noting. Everything else gets dropped.
+What never gets recorded or propagated: performance assessments, interpersonal conflicts, personal circumstances, tone and sentiment. "Sarah is underperforming" is never written. "Sarah seems frustrated" is never pushed up.
 
-This mirrors how human memory works. You don't remember every word of every conversation. You remember that your co-founder said the diligence answers would be done by Friday. You remember that the investor seemed warm but wants to see updated metrics. You remember that the new hire starts April 15th. Facts, not noise.
+What does propagate: commitments, status updates, blockers, deadlines, decisions. Facts, not feelings. The project agent knows the proposal is late. It doesn't know — and shouldn't know — why.
 
-Over weeks, `memory.md` becomes a curated history of what actually happened — not what was planned, not what was reported, but what the signals revealed.
+This is what makes the system safe to deploy. The org agent can detect that a project is at risk without ever seeing an individual's personal messages. The project agent can track commitments without surveilling the people making them. Privacy isn't an afterthought bolted onto the system. It's a structural property of how memory flows between scopes.
 
-## Cross-scope conflict detection
+## The compaction principle
 
-The real leverage is seeing across scopes.
+Raw signals are noise. The monitor captures thousands of data points per hour — app switches, tab changes, clipboard contents, messages. Most of it is meaningless.
 
-You set a personal goal: be home by 6pm on school nights. You also have a project goal: ship the feature by Friday. On Wednesday, the monitor notices signals piling up in the project scope — a PR was rejected, a dependency broke, the designer is out. Meanwhile, your personal scope shows a schedule change for Thursday evening.
+The compaction loop turns perception into knowledge. Every hour, the system reads the hot buffer of raw signals against goals and memory, and makes a judgment: what here is worth remembering? A commitment was made — that goes into memory. A deadline was mentioned — that updates actions. You browsed the same page four times without acting — that's a pattern worth noting. Everything else gets dropped.
 
-A single-scope system can't see this tension. Your project management tool doesn't know about your kids. Your family calendar doesn't know about the feature deadline. But when all goals across all scopes are loaded into the same context window, the system can surface the conflict before it becomes a crisis.
+This is how human memory works. You don't remember every word of a conversation. You remember that your co-founder committed to finishing the diligence answers by Friday, that the investor seemed warm but wants updated metrics, that the new hire starts April 15th. Facts, not noise.
 
-This extends to teams. If two project scopes are both demanding the same person's time this week, the system can flag it. If an org-level goal shifted but a project scope is still operating on the old assumption, the system can catch the drift. The conflicts that kill productivity aren't within a project — they're between projects, between work and life, between what was decided and what's actually happening.
+Over weeks, memory.md becomes a curated history of what actually happened — not what was planned, not what was reported, but what the signals revealed.
 
-## Perception and judgment
+## Perception is cheap. Judgment is expensive.
 
-The architecture splits intelligence into two tiers, mirroring how human attention works.
+The architecture splits intelligence into tiers, mirroring how human attention works.
 
-Peripheral awareness is cheap and constant. The monitor loop runs a fast, inexpensive model every fifteen seconds, scanning signals against goals. This is the part of your brain that notices a name in your peripheral vision while you're reading something else. It doesn't need to be brilliant. It needs to be fast and always on.
+The monitor loop runs a fast, inexpensive model every fifteen seconds, scanning signals against goals. This is peripheral awareness — the part of your brain that notices a name in your peripheral vision while reading something else. It doesn't need to be brilliant. It needs to be fast and always on.
 
-Focused attention is expensive and intermittent. When you sit down and ask "what should I focus on today?", the system brings its most capable model to bear — synthesizing goals, memory, actions, and recent signals into a considered answer. This is deliberate thought, not reflexive pattern matching.
+When signals match with high confidence, a more capable model synthesizes goals, memory, and signals into a ranked action plan. And when you sit down and talk to the agent directly, the most capable model available engages — slow, expensive, thoughtful.
 
-Most signals deserve a glance, not a stare. The system allocates intelligence proportionally: cheap perception for the fire hose of daily signals, expensive judgment only when you ask for it.
+Most signals deserve a glance, not a stare. The system allocates intelligence proportionally. You shouldn't bring your full attention to everything. Neither should your tools.
 
-## What this enables
+## What this makes possible
 
-Imagine starting your day and typing `work standup`. The system has been watching while you slept — emails arrived, Slack messages accumulated, a calendar event was moved. It reads all of this against your goals across every scope and tells you:
+Imagine an organization where every person, every project, and the organization itself each have a living, continuously-updated model of what they're trying to accomplish, what they know, and what they should do next. Where a strategic decision at the top propagates through project goals into individual actions within hours, not quarters. Where a blocker discovered by one person surfaces as a risk at the project level before anyone has to escalate it manually. Where two projects competing for the same person's Thursday afternoon get flagged before Thursday.
 
-Your fundraise goal has a gap: you told an investor you'd send updated metrics by today, but the spreadsheet hasn't been touched since Monday. Your project goal is on track, but Jamil flagged a blocker in Slack at 11pm that needs your input. Your personal goal has a conflict: Ruby's recital is Thursday at 5pm and your project scope is showing signs of a crunch that week.
+This isn't a fantasy about AI replacing managers. It's a system for making the invisible visible. The goals exist. The commitments exist. The conflicts exist. They're just locked in people's heads, scattered across Slack threads and calendar events and half-read emails. The three-file system, applied recursively at every scope, with memories flowing up and goals flowing down, is a way to surface what everyone already knows but nobody can see.
 
-You didn't fill out a form. You didn't update a dashboard. You just worked, and the system built understanding from the exhaust of that work.
+We didn't set out to build a better productivity tool. We set out to give people — and the teams and organizations they belong to — a shared language for what matters, what's happening, and what to do about it.
 
-This is the language of productivity: not the language of tasks and time blocks, but the language of goals, signals, and alignment. It's the language that connects what you're doing to why you're doing it, and surfaces the gaps before they become failures.
-
-We didn't set out to build a better productivity tool. We set out to make the invisible visible — to give people a way to see whether their time, the only non-renewable resource they have, is actually going where it matters.
+That's the language of productivity.
