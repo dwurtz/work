@@ -130,6 +130,67 @@ async def cmd_monitor(args: argparse.Namespace) -> None:
     await monitor.run(interactive=interactive)
 
 
+def _filter_scopes(scope_manager, scope_filter: str | None) -> list[tuple[str, str | None]]:
+    """Filter scopes by name if --scope is given."""
+    scopes = scope_manager.list_scopes()
+    if scope_filter:
+        scopes = [(st, n) for st, n in scopes if (n or st) == scope_filter]
+    return scopes
+
+
+def cmd_scope(args: argparse.Namespace) -> None:
+    """List or create scopes."""
+    from work.context import ScopeManager
+
+    scope_manager = ScopeManager(WORK_HOME)
+
+    if args.scope_action == "add":
+        _add_scope(scope_manager)
+        return
+
+    scopes = scope_manager.list_scopes()
+    if not scopes:
+        console.print("[dim]No scopes configured. Run 'work scope add' to create one.[/dim]")
+        return
+
+    console.print("[bold]Scopes:[/bold]")
+    for scope_type, name in scopes:
+        label = name or scope_type
+        store = scope_manager.get_store(scope_type, name)
+        goal_count = store.read_goals().count("## ")
+        console.print(f"  [cyan]{scope_type}[/cyan]/{label}  ({goal_count} goals)")
+
+
+def _add_scope(scope_manager) -> None:
+    """Interactive scope creation."""
+    scope_type = Prompt.ask(
+        "Scope type",
+        choices=["personal", "projects", "org"],
+        default="projects",
+    )
+
+    name = None
+    if scope_type in ("projects", "org"):
+        name = Prompt.ask("Name (e.g. 'kinsol', 'kinsol-research')")
+        if not name:
+            console.print("[red]Name required for project/org scopes[/red]")
+            return
+
+    store = scope_manager.create_scope(scope_type, name)
+    label = name or scope_type
+    console.print(f"[green]Created scope: {scope_type}/{label}[/green]")
+    console.print(f"  Files at: {store.root}")
+
+    # Offer to add a goal right away
+    if Prompt.ask("Add a goal now?", choices=["y", "n"], default="y") == "y":
+        goal_name = Prompt.ask("Goal name")
+        description = Prompt.ask("Description")
+        people_raw = Prompt.ask("Key people (comma-separated)", default="")
+        people = [p.strip() for p in people_raw.split(",") if p.strip()] or None
+        store.set_goal(goal_name, description, people)
+        console.print(f"[green]Added goal '{goal_name}'[/green]")
+
+
 def cmd_goals(args: argparse.Namespace) -> None:
     """List or add goals."""
     from work.context import ScopeManager
@@ -141,9 +202,9 @@ def cmd_goals(args: argparse.Namespace) -> None:
         return
 
     # List all goals
-    scopes = scope_manager.list_scopes()
+    scopes = _filter_scopes(scope_manager, getattr(args, "scope", None))
     if not scopes:
-        console.print("[dim]No scopes configured. Run 'work goals add' to create one.[/dim]")
+        console.print("[dim]No scopes found. Run 'work scope add' to create one.[/dim]")
         return
 
     for scope_type, name in scopes:
@@ -194,7 +255,7 @@ def cmd_actions(args: argparse.Namespace) -> None:
 
     scope_manager = ScopeManager(WORK_HOME)
 
-    for scope_type, name in scope_manager.list_scopes():
+    for scope_type, name in _filter_scopes(scope_manager, getattr(args, "scope", None)):
         store = scope_manager.get_store(scope_type, name)
         label = name or scope_type
         actions = store.read_actions().strip()
@@ -210,7 +271,7 @@ def cmd_memory(args: argparse.Namespace) -> None:
 
     scope_manager = ScopeManager(WORK_HOME)
 
-    for scope_type, name in scope_manager.list_scopes():
+    for scope_type, name in _filter_scopes(scope_manager, getattr(args, "scope", None)):
         store = scope_manager.get_store(scope_type, name)
         label = name or scope_type
         memory = store.read_memory().strip()
@@ -284,15 +345,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_monitor = sub.add_parser("monitor", help="Start the monitoring loop")
     p_monitor.add_argument("--daemon", action="store_true", help="Run headless in background")
 
+    # work scope [add]
+    p_scope = sub.add_parser("scope", help="List or create scopes")
+    p_scope.add_argument("scope_action", nargs="?", default=None, choices=["add"], help="'add' to create a new scope")
+
     # work goals [add]
     p_goals = sub.add_parser("goals", help="List or manage goals")
     p_goals.add_argument("goals_action", nargs="?", default=None, choices=["add"], help="'add' to create a new goal")
+    p_goals.add_argument("--scope", type=str, default=None, help="Filter by scope name")
 
     # work actions
-    sub.add_parser("actions", help="Show current actions across scopes")
+    p_actions = sub.add_parser("actions", help="Show current actions across scopes")
+    p_actions.add_argument("--scope", type=str, default=None, help="Filter by scope name")
 
     # work memory
-    sub.add_parser("memory", help="Show memory across scopes")
+    p_memory = sub.add_parser("memory", help="Show memory across scopes")
+    p_memory.add_argument("--scope", type=str, default=None, help="Filter by scope name")
 
     # work standup
     sub.add_parser("standup", help="Morning standup briefing")
@@ -322,6 +390,8 @@ def main() -> None:
             asyncio.run(cmd_interactive(args))
         case "monitor":
             asyncio.run(cmd_monitor(args))
+        case "scope":
+            cmd_scope(args)
         case "goals":
             cmd_goals(args)
         case "actions":
