@@ -48,9 +48,12 @@ def capture_screenshot_if_changed() -> Signal | None:
         from PIL import Image
 
         current_hash = imagehash.phash(Image.open(path))
-        if _last_screen_hash is not None and current_hash - _last_screen_hash < 5:
-            os.remove(path)
-            return None
+        if _last_screen_hash is not None:
+            diff = current_hash - _last_screen_hash
+            log.debug("Screenshot hash diff: %d", diff)
+            if diff < 3:
+                os.remove(path)
+                return None
         _last_screen_hash = current_hash
     except ImportError:
         log.warning("imagehash/Pillow not installed; skipping perceptual hash")
