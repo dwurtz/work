@@ -117,16 +117,55 @@ class MonitorLoop:
         new_signals = await loop.run_in_executor(None, self.collector.collect_all)
 
         if new_signals:
-            self.pending_signals.extend(new_signals)
-            self.signals_collected += len(new_signals)
+            # Process screenshot signals through vision before adding
+            processed: list[Signal] = []
+            for sig in new_signals:
+                if sig.source == "screenshot" and sig.text.endswith(".png"):
+                    analyzed = await self._analyze_screenshot(sig)
+                    if analyzed:
+                        processed.append(analyzed)
+                else:
+                    processed.append(sig)
+
+            self.pending_signals.extend(processed)
+            self.signals_collected += len(processed)
             self.last_signal_time = datetime.now(timezone.utc)
-            log.info("Collected %d new signals (%d pending)", len(new_signals), len(self.pending_signals))
+            log.info("Collected %d new signals (%d pending)", len(processed), len(self.pending_signals))
 
             if self.display:
-                for sig in new_signals:
+                for sig in processed:
                     self.display.show_signal(sig)
 
         self.phase = "IDLE"
+
+    async def _analyze_screenshot(self, sig: Signal) -> Signal | None:
+        """Send screenshot to Gemini Vision, delete the file, return a signal with the summary."""
+        import os
+        path = sig.text
+        try:
+            goals_text = self.scope_manager.all_goals()
+            result = await self.gemini.analyze_screenshot(path, goals_text)
+            summary = result.get("summary", "")
+            app = result.get("app", "")
+            details = result.get("key_details", "")
+            text = f"{app}: {summary}"
+            if details:
+                text += f" | {details}"
+            return Signal(
+                source="screenshot",
+                sender=app or "screen",
+                text=text[:500],
+                timestamp=sig.timestamp,
+                id_key=sig.id_key,
+            )
+        except Exception:
+            log.exception("Vision analysis failed for %s", path)
+            return None
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
     async def _match_cycle(self) -> None:
         """Send pending signals to Gemini for goal matching."""

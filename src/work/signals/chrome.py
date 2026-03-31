@@ -1,4 +1,4 @@
-"""Collect open Chrome tabs via AppleScript."""
+"""Collect open Chrome tabs via AppleScript, marking the active tab."""
 
 from __future__ import annotations
 
@@ -13,9 +13,23 @@ log = logging.getLogger(__name__)
 _APPLESCRIPT = '''
 tell application "Google Chrome"
     set tabList to {}
+    set activeWindowIndex to 0
+    set activeTabIndex to 0
+    try
+        set activeWindowIndex to index of front window
+        set activeTabIndex to active tab index of front window
+    end try
+    set winIndex to 0
     repeat with w in every window
+        set winIndex to winIndex + 1
+        set tabIndex to 0
         repeat with t in every tab of w
-            set end of tabList to (title of t) & " ||| " & (URL of t)
+            set tabIndex to tabIndex + 1
+            set isActive to "0"
+            if winIndex = activeWindowIndex and tabIndex = activeTabIndex then
+                set isActive to "1"
+            end if
+            set end of tabList to isActive & " ||| " & (title of t) & " ||| " & (URL of t)
         end repeat
     end repeat
     set AppleScript's text item delimiters to "\\n"
@@ -25,7 +39,7 @@ end tell
 
 
 def collect_chrome_tabs() -> list[Signal]:
-    """Get open Chrome tab titles and URLs via osascript."""
+    """Get open Chrome tab titles and URLs via osascript, with active tab marked."""
     results: list[Signal] = []
     try:
         r = subprocess.run(
@@ -38,15 +52,19 @@ def collect_chrome_tabs() -> list[Signal]:
             return results
         now = datetime.now()
         for line in r.stdout.strip().split("\n"):
-            parts = line.split(" ||| ", 1)
-            title = parts[0].strip()
-            url = parts[1].strip() if len(parts) > 1 else ""
+            parts = line.split(" ||| ")
+            if len(parts) < 3:
+                continue
+            is_active = parts[0].strip() == "1"
+            title = parts[1].strip()
+            url = parts[2].strip()
             id_key = url or title
+            label = f"[ACTIVE] {title}" if is_active else title
             results.append(
                 Signal(
                     source="chrome",
                     sender=url,
-                    text=title[:500],
+                    text=label[:500],
                     timestamp=now,
                     id_key=id_key,
                 )
