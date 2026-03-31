@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "work"
+version = "0.1.0"
+description = "A productivity agent CLI powered by Gemini"
+requires-python = ">=3.10"
+dependencies = [
+    "google-genai>=1.0.0",
+    "rich>=13.0",
+    "imagehash>=4.3",
+    "Pillow>=10.0",
+]
+
+[project.scripts]
+work = "work.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
