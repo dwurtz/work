@@ -40,6 +40,8 @@ class MonitorDisplay:
         self.signals_log: deque[str] = deque(maxlen=max_log)
         self.matches_log: deque[str] = deque(maxlen=max_log)
         self.phase: str = "IDLE"
+        self.real_match_count: int = 0
+        self.skip_count: int = 0
         self._live: Live | None = None
 
     def start(self) -> None:
@@ -75,6 +77,7 @@ class MonitorDisplay:
         summary = match.get("signal_summary", "")[:60]
 
         if matched and conf != "none":
+            self.real_match_count += 1
             color = CONFIDENCE_COLORS.get(conf, "white")
             goal = match.get("goal", "?")
             scope = match.get("scope", "?")
@@ -84,6 +87,7 @@ class MonitorDisplay:
                 f"  [dim italic]{reasoning}[/dim italic]"
             )
         else:
+            self.skip_count += 1
             self.matches_log.append(
                 f"[dim][ SKIP ] {summary}[/dim]\n"
                 f"  [dim italic]{reasoning}[/dim italic]"
@@ -114,7 +118,8 @@ class MonitorDisplay:
         header.append("  |  phase: ", style="dim")
         header.append(self.phase, style=phase_style)
         header.append(f"  |  signals: {len(self.signals_log)}", style="dim")
-        header.append(f"  |  matches: {len(self.matches_log)}", style="dim")
+        header.append(f"  |  matches: {self.real_match_count}", style="dim")
+        header.append(f"  |  skipped: {self.skip_count}", style="dim")
 
         parts = [Panel(header, border_style="bright_blue")]
 
