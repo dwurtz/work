@@ -47,11 +47,13 @@ class SignalCollector:
         except Exception:
             log.exception("WhatsApp collector error")
 
-        # Chrome tabs
-        try:
-            raw.extend(collect_chrome_tabs())
-        except Exception:
-            log.exception("Chrome collector error")
+        # Chrome tabs — disabled due to AppleScript profile bug
+        # (only sees one profile, reports wrong active tab)
+        # Active tab is captured via active_app window title instead
+        # try:
+        #     raw.extend(collect_chrome_tabs())
+        # except Exception:
+        #     log.exception("Chrome collector error")
 
         # Clipboard
         try:
