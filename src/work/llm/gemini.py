@@ -106,14 +106,18 @@ Return ONLY the JSON array."""
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                max_output_tokens=1024,
+                max_output_tokens=2048,
                 temperature=0.2,
             ),
         )
         try:
             matches = json.loads(resp.text)
         except (json.JSONDecodeError, ValueError):
-            matches = _parse_json(resp.text)
+            try:
+                matches = _parse_json(resp.text)
+            except (json.JSONDecodeError, ValueError):
+                log.warning("match_signals: could not parse response: %s", resp.text[:200])
+                return []
 
         if not isinstance(matches, list):
             log.warning("match_signals: expected list, got %s", type(matches))
