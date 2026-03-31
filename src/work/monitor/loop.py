@@ -385,33 +385,12 @@ class MonitorLoop:
 
     @staticmethod
     def _notify(title: str, body: str) -> None:
-        """Send a macOS notification via terminal-notifier or osascript fallback."""
-        import shutil
+        """Send a macOS notification via osascript through Terminal."""
         import subprocess
 
-        # Escape quotes for shell
         safe_title = title[:100].replace('"', '\\"').replace("'", "\\'")
         safe_body = body[:200].replace('"', '\\"').replace("'", "\\'")
 
-        # Try terminal-notifier first (clickable, opens terminal)
-        if shutil.which("terminal-notifier"):
-            try:
-                subprocess.run(
-                    [
-                        "terminal-notifier",
-                        "-title", "work",
-                        "-subtitle", safe_title,
-                        "-message", safe_body,
-                        "-sound", "Glass",
-                        "-activate", "com.apple.Terminal",
-                    ],
-                    capture_output=True, timeout=5,
-                )
-                return
-            except Exception:
-                pass
-
-        # Fallback: osascript via Terminal so clicks open Terminal, not Script Editor
         try:
             script = (
                 f'tell application "Terminal"\n'
