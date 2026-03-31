@@ -1,16 +1,20 @@
-"""Collect open Chrome tabs via AppleScript, marking the active tab."""
+"""Collect open Chrome tabs via Chrome DevTools Protocol and AppleScript fallback."""
 
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
+import urllib.request
 from datetime import datetime
 
 from work.signals.types import Signal
 
 log = logging.getLogger(__name__)
 
-# Get all tabs
+CDP_URL = "http://localhost:9222/json"
+
+# Fallback AppleScript
 _ALL_TABS_SCRIPT = '''
 tell application "Google Chrome"
     set tabList to {}
@@ -24,7 +28,6 @@ tell application "Google Chrome"
 end tell
 '''
 
-# Get active tab directly
 _ACTIVE_TAB_SCRIPT = '''
 tell application "Google Chrome"
     return (URL of active tab of front window)
@@ -32,51 +35,84 @@ end tell
 '''
 
 
-def collect_chrome_tabs() -> list[Signal]:
-    """Get open Chrome tab titles and URLs via osascript, with active tab marked."""
-    results: list[Signal] = []
+def _collect_via_cdp() -> list[dict] | None:
+    """Try Chrome DevTools Protocol to get all tabs across all profiles."""
     try:
-        # Get active tab URL first
-        active_url = ""
-        try:
-            r_active = subprocess.run(
-                ["osascript", "-e", _ACTIVE_TAB_SCRIPT],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if r_active.returncode == 0:
-                active_url = r_active.stdout.strip()
-        except Exception:
-            pass
+        req = urllib.request.Request(CDP_URL, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read())
+        tabs = []
+        for entry in data:
+            if entry.get("type") == "page":
+                tabs.append({
+                    "title": entry.get("title", ""),
+                    "url": entry.get("url", ""),
+                })
+        return tabs if tabs else None
+    except Exception:
+        return None
 
-        # Get all tabs
+
+def _get_active_url() -> str:
+    """Get the active tab URL via AppleScript."""
+    try:
+        r = subprocess.run(
+            ["osascript", "-e", _ACTIVE_TAB_SCRIPT],
+            capture_output=True, text=True, timeout=5,
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def _collect_via_applescript() -> list[dict]:
+    """Fallback: get tabs via AppleScript."""
+    try:
         r = subprocess.run(
             ["osascript", "-e", _ALL_TABS_SCRIPT],
-            capture_output=True,
-            text=True,
-            timeout=10,
+            capture_output=True, text=True, timeout=10,
         )
         if r.returncode != 0 or not r.stdout.strip():
-            return results
-
-        now = datetime.now()
+            return []
+        tabs = []
         for line in r.stdout.strip().split("\n"):
             parts = line.split(" ||| ", 1)
             title = parts[0].strip()
             url = parts[1].strip() if len(parts) > 1 else ""
-            id_key = url or title
-            is_active = url == active_url and active_url != ""
-            label = f"[ACTIVE] {title}" if is_active else title
-            results.append(
-                Signal(
-                    source="chrome",
-                    sender=url,
-                    text=label[:500],
-                    timestamp=now,
-                    id_key=id_key,
-                )
-            )
+            tabs.append({"title": title, "url": url})
+        return tabs
     except Exception:
-        log.exception("Chrome tab collection failed")
+        return []
+
+
+def collect_chrome_tabs() -> list[Signal]:
+    """Get open Chrome tab titles and URLs, with active tab marked."""
+    # Try CDP first (gets all profiles), fall back to AppleScript
+    tabs = _collect_via_cdp()
+    if tabs is None:
+        tabs = _collect_via_applescript()
+
+    if not tabs:
+        return []
+
+    active_url = _get_active_url()
+    now = datetime.now()
+    results: list[Signal] = []
+
+    for tab in tabs:
+        title = tab["title"]
+        url = tab["url"]
+        id_key = url or title
+        is_active = url == active_url and active_url != ""
+        label = f"[ACTIVE] {title}" if is_active else title
+        results.append(
+            Signal(
+                source="chrome",
+                sender=url,
+                text=label[:500],
+                timestamp=now,
+                id_key=id_key,
+            )
+        )
+
     return results
