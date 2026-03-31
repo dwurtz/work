@@ -104,6 +104,25 @@ IMPORTANT RULES:
 - If no signals match any goal, still return an entry for each with matched=false and your reasoning.
 - ALWAYS include reasoning — this is shown to the user so they can see what the system is thinking.
 
+GOAL INFERENCE:
+- If you see a CLUSTER of unmatched signals that suggest a coherent activity (e.g. multiple real estate signals, or several signals about travel planning), add a special entry at the end:
+  {{
+    "signal_summary": "description of the pattern you noticed",
+    "source": "inference",
+    "matched": false,
+    "reasoning": "why you think this is a goal",
+    "scope": null,
+    "goal": null,
+    "confidence": "none",
+    "action": null,
+    "proposed_goal": {{
+      "name": "short goal name",
+      "description": "what this goal is about based on the signals",
+      "key_people": ["names if detectable"]
+    }}
+  }}
+- Only propose a goal when 2+ signals form a clear pattern. Don't propose for single isolated signals.
+
 Return ONLY the JSON array."""
 
         resp = await self.client.aio.models.generate_content(

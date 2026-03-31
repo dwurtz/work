@@ -39,6 +39,7 @@ class MonitorDisplay:
         self.console = Console()
         self.signals_log: deque[str] = deque(maxlen=max_log)
         self.matches_log: deque[str] = deque(maxlen=max_log)
+        self.proposed_goals: list[dict] = []  # pending proposed goals
         self.phase: str = "IDLE"
         self.real_match_count: int = 0
         self.skip_count: int = 0
@@ -85,6 +86,16 @@ class MonitorDisplay:
                 f"[{color}][{conf.upper()}][/{color}] "
                 f"[bold]{goal}[/bold] ({scope}): {summary}\n"
                 f"  [dim italic]{reasoning}[/dim italic]"
+            )
+        elif match.get("proposed_goal"):
+            # Goal inference — show as a proposal
+            pg = match["proposed_goal"]
+            self.proposed_goals.append(pg)
+            idx = len(self.proposed_goals)
+            self.matches_log.append(
+                f"[bold bright_yellow][ NEW GOAL? ] {pg.get('name', '?')}[/bold bright_yellow]\n"
+                f"  [italic]{pg.get('description', '')}[/italic]\n"
+                f"  [bold bright_yellow]Press {idx} to accept[/bold bright_yellow]"
             )
         else:
             self.skip_count += 1
@@ -140,6 +151,21 @@ class MonitorDisplay:
                 matches_text.append("\n")
             parts.append(
                 Panel(matches_text, title="Reasoning", border_style="green", height=20)
+            )
+
+        # Proposed goals panel
+        if self.proposed_goals:
+            pg_text = Text()
+            for i, pg in enumerate(self.proposed_goals, 1):
+                pg_text.append(f"  {i}. ", style="bold bright_yellow")
+                pg_text.append(pg.get("name", "?"), style="bold")
+                pg_text.append(f" — {pg.get('description', '')[:80]}\n", style="dim")
+                people = pg.get("key_people", [])
+                if people:
+                    pg_text.append(f"     Key people: {', '.join(people)}\n", style="dim italic")
+            pg_text.append("\n  Press number to accept, 0 to dismiss all", style="bold bright_yellow")
+            parts.append(
+                Panel(pg_text, title="Proposed Goals", border_style="bright_yellow", height=min(len(self.proposed_goals) * 3 + 4, 15))
             )
 
         return Group(*parts)

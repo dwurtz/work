@@ -101,11 +101,53 @@ class MonitorLoop:
             await asyncio.sleep(COMPACT_INTERVAL)
 
     async def _display_loop(self) -> None:
-        """Refresh the Rich display periodically."""
+        """Refresh the Rich display and handle key input."""
         while self.running and self.display:
             self.display.show_status(self.phase)
             self.display.render()
+
+            # Check for key input (non-blocking)
+            key = await self._read_key()
+            if key and self.display.proposed_goals:
+                if key == "0":
+                    log.info("Dismissed all proposed goals")
+                    self.display.proposed_goals.clear()
+                elif key.isdigit():
+                    idx = int(key) - 1
+                    if 0 <= idx < len(self.display.proposed_goals):
+                        pg = self.display.proposed_goals.pop(idx)
+                        await self._accept_proposed_goal(pg)
+
             await asyncio.sleep(1)
+
+    async def _accept_proposed_goal(self, pg: dict) -> None:
+        """Accept a proposed goal and add it to personal scope."""
+        try:
+            store = self.scope_manager.get_store("personal")
+            store.set_goal(
+                pg.get("name", "New Goal"),
+                pg.get("description", ""),
+                pg.get("key_people"),
+            )
+            log.info("Accepted goal: %s", pg.get("name"))
+        except Exception:
+            log.exception("Error accepting goal")
+
+    async def _read_key(self) -> str | None:
+        """Non-blocking single key read."""
+        import sys
+        import select
+        loop = asyncio.get_running_loop()
+        try:
+            ready = await loop.run_in_executor(
+                None,
+                lambda: select.select([sys.stdin], [], [], 0.05)[0],
+            )
+            if ready:
+                return sys.stdin.read(1)
+        except Exception:
+            pass
+        return None
 
     # ------------------------------------------------------------------
     # Cycles
@@ -210,6 +252,10 @@ class MonitorLoop:
         if self.display:
             for match in matches:
                 self.display.show_match(match)
+                # Handle proposed goals
+                if match.get("proposed_goal"):
+                    pg = match["proposed_goal"]
+                    log.info("Goal proposed: %s", pg.get("name", "?"))
 
         # Route actual matches to the correct scope's hot buffer
         high_confidence_scopes: set[tuple[str, str | None]] = set()
