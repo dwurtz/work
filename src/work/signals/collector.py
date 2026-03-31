@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections import deque
 from datetime import datetime
 
 from work.config import IGNORED_APPS, SCREENSHOT_APPS
@@ -20,10 +21,11 @@ log = logging.getLogger(__name__)
 class SignalCollector:
     """Collects signals from all sources, deduplicating across calls."""
 
-    def __init__(self) -> None:
+    def __init__(self, history_size: int = 100) -> None:
         self._seen_ids: set[str] = set()
         self._last_app: str = ""
         self._last_title: str = ""
+        self.recent_history: deque[Signal] = deque(maxlen=history_size)
 
     def collect_all(self) -> list[Signal]:
         """
@@ -92,8 +94,20 @@ class SignalCollector:
             if sig.id_key not in self._seen_ids:
                 self._seen_ids.add(sig.id_key)
                 new_signals.append(sig)
+                self.recent_history.append(sig)
 
         return new_signals
+
+    def get_unmatched_history_summary(self, matched_ids: set[str]) -> str:
+        """Return a text summary of recent signals that were NOT matched to any goal."""
+        unmatched = [s for s in self.recent_history if s.id_key not in matched_ids]
+        if not unmatched:
+            return ""
+        lines = []
+        for s in unmatched[-30:]:  # last 30 unmatched
+            ts = s.timestamp.strftime("%H:%M")
+            lines.append(f"[{ts}] [{s.source}] {s.sender}: {s.text[:100]}")
+        return "\n".join(lines)
 
     def should_screenshot(self, app: str, title: str) -> bool:
         """Return True if app/title changed since last check and app is screenshottable."""

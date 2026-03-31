@@ -35,6 +35,7 @@ class MonitorLoop:
         self.display: MonitorDisplay | None = None
 
         # Stats
+        self.matched_signal_ids: set[str] = set()
         self.signals_collected = 0
         self.matches_found = 0
         self.last_signal_time: datetime | None = None
@@ -228,6 +229,14 @@ class MonitorLoop:
             f"- [{s.source}] {s.sender}: {s.text}" for s in batch
         )
 
+        # Include unmatched history for pattern detection
+        unmatched_history = self.collector.get_unmatched_history_summary(self.matched_signal_ids)
+        if unmatched_history:
+            signals_text += (
+                "\n\nRECENT UNMATCHED SIGNALS (for pattern detection — these were previously skipped):\n"
+                + unmatched_history
+            )
+
         # Get all goals across scopes
         goals_text = self.scope_manager.all_goals()
         if not goals_text.strip():
@@ -259,6 +268,12 @@ class MonitorLoop:
 
         # Route actual matches to the correct scope's hot buffer
         high_confidence_scopes: set[tuple[str, str | None]] = set()
+
+        # Track matched signal IDs so they don't appear in unmatched history
+        for s in batch:
+            for m in actual_matches:
+                if m.get("signal_summary", "") in s.text or s.text[:30] in m.get("signal_summary", ""):
+                    self.matched_signal_ids.add(s.id_key)
 
         for match in actual_matches:
             scope_key = self._parse_scope(match.get("scope", "personal"))
