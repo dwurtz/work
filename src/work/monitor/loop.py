@@ -162,6 +162,8 @@ class MonitorLoop:
                     analyzed = await self._analyze_screenshot(sig)
                     if analyzed:
                         processed.append(analyzed)
+                        # Persist the analyzed signal (not the raw file path)
+                        self.collector._persist_signal(analyzed)
                 else:
                     processed.append(sig)
 

@@ -154,7 +154,10 @@ class SignalCollector:
                 self._seen_ids.add(sig.id_key)
                 new_signals.append(sig)
                 self.recent_history.append(sig)
-                self._persist_signal(sig)
+                # Don't persist screenshot signals here — they contain raw file paths.
+                # The monitor loop persists them after vision analysis.
+                if sig.source != "screenshot":
+                    self._persist_signal(sig)
 
         return new_signals
 
