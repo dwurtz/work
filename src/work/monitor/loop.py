@@ -329,9 +329,22 @@ class MonitorLoop:
             except (ValueError, FileNotFoundError):
                 log.warning("Scope %s not found for commitment, skipping", scope_key)
 
-        # 9. Handle proposed goals
+        # 9. Handle proposed goals — assign IDs, save to file, notify
+        import uuid
+        proposed_path = WORK_HOME / "proposed_goals.json"
+        existing_proposed = []
+        if proposed_path.exists():
+            try:
+                existing_proposed = json.loads(proposed_path.read_text())
+            except (json.JSONDecodeError, ValueError):
+                existing_proposed = []
+
         for pg in proposed_goals:
-            log.info("Goal proposed: %s", pg.get("name", "?"))
+            pg["id"] = str(uuid.uuid4())[:8]
+            pg["proposed_at"] = datetime.now(timezone.utc).isoformat()
+            existing_proposed.append(pg)
+            log.info("Goal proposed: %s (id=%s)", pg.get("name", "?"), pg["id"])
+
             if self.display:
                 self.display.proposed_goals.append(pg)
                 idx = len(self.display.proposed_goals)
@@ -345,6 +358,9 @@ class MonitorLoop:
                 pg.get("description", ""),
             )
             self._send_goal_proposal_email(pg)
+
+        if proposed_goals:
+            proposed_path.write_text(json.dumps(existing_proposed, indent=2))
 
         # Build proactive conversation message if anything important happened
         proactive_parts = []
@@ -502,26 +518,52 @@ class MonitorLoop:
 
     @staticmethod
     def _send_goal_proposal_email(pg: dict) -> None:
-        """Send an email with a proposed goal and link to review it."""
+        """Send an HTML email with a proposed goal, accept/reject buttons, and link to review."""
         import subprocess
         import json
         import base64
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        import urllib.parse
 
         name = pg.get("name", "New Goal")
         description = pg.get("description", "")
         people = ", ".join(pg.get("key_people", [])) or "none detected"
+        goal_id = pg.get("id", "")
 
-        body = (
-            f"A new goal has been detected based on your recent activity:\n\n"
-            f"Goal: {name}\n"
-            f"Description: {description}\n"
-            f"Key People: {people}\n\n"
-            f"Review and accept: http://localhost:5050/#home\n\n"
-            f"— work agent"
-        )
+        review_url = "http://localhost:5050/#home"
+        accept_url = f"http://localhost:5050/api/proposed/{goal_id}/accept"
+        reject_url = f"http://localhost:5050/api/proposed/{goal_id}/reject"
+        goal_name_encoded = urllib.parse.quote(name)
+        detail_url = f"http://localhost:5050/#goal/personal/{goal_name_encoded}"
 
-        raw_msg = f"From: david@davidwurtz.com\nTo: david@davidwurtz.com\nSubject: [work] New goal detected: {name}\n\n{body}"
-        encoded = base64.urlsafe_b64encode(raw_msg.encode()).decode()
+        html = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0d1117; color: #e6edf3; padding: 24px; border-radius: 12px;">
+            <div style="font-size: 12px; color: #7d8590; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">New Goal Detected</div>
+            <h1 style="color: #e6edf3; font-size: 24px; margin: 0 0 12px 0;">{name}</h1>
+            <p style="color: #7d8590; font-size: 16px; line-height: 1.5; margin: 0 0 16px 0;">{description}</p>
+            <div style="color: #7d8590; font-size: 14px; margin-bottom: 24px;">
+                <strong>Key People:</strong> {people}
+            </div>
+            <div style="margin-bottom: 24px;">
+                <a href="{accept_url}" style="display: inline-block; background: #238636; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; margin-right: 12px;">Accept Goal</a>
+                <a href="{reject_url}" style="display: inline-block; background: #30363d; color: #7d8590; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">Dismiss</a>
+            </div>
+            <div style="border-top: 1px solid #30363d; padding-top: 16px;">
+                <a href="{review_url}" style="color: #58a6ff; text-decoration: none; font-size: 14px;">View all proposed goals →</a>
+            </div>
+            <div style="margin-top: 16px; color: #484f58; font-size: 12px;">— work agent</div>
+        </div>
+        """
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = "david@davidwurtz.com"
+        msg["To"] = "david@davidwurtz.com"
+        msg["Subject"] = f"[work] New goal detected: {name}"
+        msg.attach(MIMEText(f"New goal: {name}\n{description}\n\nAccept: {accept_url}\nDismiss: {reject_url}\nReview: {review_url}", "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        encoded = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
         try:
             subprocess.run(

@@ -328,7 +328,21 @@ def get_proposed() -> list[dict]:
 
 
 @app.post("/api/proposed/{goal_id}/accept")
-def accept_proposed(goal_id: str) -> dict:
+def accept_proposed_post(goal_id: str) -> dict:
+    return _accept_proposed(goal_id)
+
+
+@app.get("/api/proposed/{goal_id}/accept")
+def accept_proposed_get(goal_id: str):
+    """Accept from email link (GET request) and redirect to goal page."""
+    result = _accept_proposed(goal_id)
+    name = result.get("name", "")
+    import urllib.parse
+    from starlette.responses import RedirectResponse
+    return RedirectResponse(url=f"/#goal/personal/{urllib.parse.quote(name)}")
+
+
+def _accept_proposed(goal_id: str) -> dict:
     proposed = _read_proposed()
     target = None
     remaining = []
@@ -341,7 +355,6 @@ def accept_proposed(goal_id: str) -> dict:
     if target is None:
         return {"status": "not_found", "id": goal_id}
 
-    # Add to personal scope goals
     store = scope_manager.get_store("personal")
     store.set_goal(
         target.get("name", "New Goal"),
@@ -353,7 +366,19 @@ def accept_proposed(goal_id: str) -> dict:
 
 
 @app.post("/api/proposed/{goal_id}/reject")
-def reject_proposed(goal_id: str) -> dict:
+def reject_proposed_post(goal_id: str) -> dict:
+    return _reject_proposed(goal_id)
+
+
+@app.get("/api/proposed/{goal_id}/reject")
+def reject_proposed_get(goal_id: str):
+    """Reject from email link (GET request) and redirect to home."""
+    from starlette.responses import RedirectResponse
+    _reject_proposed(goal_id)
+    return RedirectResponse(url="/#home")
+
+
+def _reject_proposed(goal_id: str) -> dict:
     proposed = _read_proposed()
     remaining = [pg for pg in proposed if pg.get("id") != goal_id]
     if len(remaining) == len(proposed):
