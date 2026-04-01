@@ -263,18 +263,11 @@ class MonitorLoop:
             if self.display:
                 self.display.show_match(match)
             conf = match.get("confidence", "low")
-            if conf == "high":
-                goal = match.get("goal", "?")
-                reasoning = match.get("reasoning", "")
-                self._alert(
-                    f"[HIGH] {goal}",
-                    reasoning[:200],
-                )
-            elif conf == "medium":
+            if conf in ("high", "medium"):
                 goal = match.get("goal", "?")
                 reasoning = match.get("reasoning", "")
                 self._notify(
-                    f"[MEDIUM] {goal}",
+                    f"[{conf.upper()}] {goal}",
                     reasoning[:200],
                 )
 
@@ -347,10 +340,11 @@ class MonitorLoop:
                     f"  [italic]{pg.get('description', '')}[/italic]\n"
                     f"  [bold bright_yellow]Press {idx} to accept[/bold bright_yellow]"
                 )
-            self._alert(
+            self._notify(
                 f"New goal? {pg.get('name', '?')}",
                 pg.get("description", ""),
             )
+            self._send_goal_proposal_email(pg)
 
         # Build proactive conversation message if anything important happened
         proactive_parts = []
@@ -506,11 +500,40 @@ class MonitorLoop:
         except Exception:
             log.exception("Email send failed")
 
-    def _alert(self, title: str, body: str) -> None:
-        """Send notification via all channels: macOS, iMessage, and email."""
-        self._notify(title, body)
-        self._send_imessage("david@davidwurtz.com", f"[work] {title}: {body[:200]}")
-        self._send_email(title, body)
+    @staticmethod
+    def _send_goal_proposal_email(pg: dict) -> None:
+        """Send an email with a proposed goal and link to review it."""
+        import subprocess
+        import json
+        import base64
+
+        name = pg.get("name", "New Goal")
+        description = pg.get("description", "")
+        people = ", ".join(pg.get("key_people", [])) or "none detected"
+
+        body = (
+            f"A new goal has been detected based on your recent activity:\n\n"
+            f"Goal: {name}\n"
+            f"Description: {description}\n"
+            f"Key People: {people}\n\n"
+            f"Review and accept: http://localhost:5050/#home\n\n"
+            f"— work agent"
+        )
+
+        raw_msg = f"From: david@davidwurtz.com\nTo: david@davidwurtz.com\nSubject: [work] New goal detected: {name}\n\n{body}"
+        encoded = base64.urlsafe_b64encode(raw_msg.encode()).decode()
+
+        try:
+            subprocess.run(
+                [
+                    "gws", "gmail", "users", "messages", "send",
+                    "--params", json.dumps({"userId": "me"}),
+                    "--json", json.dumps({"raw": encoded}),
+                ],
+                capture_output=True, timeout=15,
+            )
+        except Exception:
+            log.exception("Goal proposal email failed")
 
     def stop(self) -> None:
         self.running = False
