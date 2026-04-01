@@ -54,6 +54,7 @@ SIGNAL_LOG = WORK_HOME / "signal_log.jsonl"
 ANALYSIS_LOG = WORK_HOME / "analysis_log.jsonl"
 PROPOSED_GOALS = WORK_HOME / "proposed_goals.json"
 PENDING_PATH = WORK_HOME / "pending_actions.json"
+CONTACTS_PATH = WORK_HOME / "contacts.json"
 
 
 def _read_jsonl(path: Path, limit: int | None = None) -> list[dict]:
@@ -496,6 +497,55 @@ def edit_pending(action_id: str, body: PendingEdit) -> dict:
             _save_pending(pending)
             return {"status": "updated", "id": action_id}
     return {"status": "not_found", "id": action_id}
+
+
+# ---------------------------------------------------------------------------
+# Contacts
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/contacts")
+async def get_contacts():
+    if CONTACTS_PATH.exists():
+        try:
+            return json.loads(CONTACTS_PATH.read_text())
+        except (json.JSONDecodeError, ValueError):
+            return []
+    return []
+
+
+@app.post("/api/contacts")
+async def upsert_contact(body: dict):
+    contacts = []
+    if CONTACTS_PATH.exists():
+        try:
+            contacts = json.loads(CONTACTS_PATH.read_text())
+        except (json.JSONDecodeError, ValueError):
+            contacts = []
+    existing = next((c for c in contacts if c.get("id") == body.get("id")), None)
+    if existing:
+        existing.update(body)
+    else:
+        if "id" not in body:
+            body["id"] = body.get("name", "").lower().replace(" ", "_")[:20]
+        contacts.append(body)
+    WORK_HOME.mkdir(parents=True, exist_ok=True)
+    CONTACTS_PATH.write_text(json.dumps(contacts, indent=2))
+    return {"ok": True}
+
+
+@app.delete("/api/contacts/{contact_id}")
+async def delete_contact(contact_id: str):
+    contacts = []
+    if CONTACTS_PATH.exists():
+        try:
+            contacts = json.loads(CONTACTS_PATH.read_text())
+        except (json.JSONDecodeError, ValueError):
+            contacts = []
+    contacts = [c for c in contacts if c.get("id") != contact_id]
+    WORK_HOME.mkdir(parents=True, exist_ok=True)
+    CONTACTS_PATH.write_text(json.dumps(contacts, indent=2))
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

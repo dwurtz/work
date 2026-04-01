@@ -524,6 +524,112 @@ nav {
 .mt-16 { margin-top: 16px; }
 .mb-8 { margin-bottom: 8px; }
 .mb-16 { margin-bottom: 16px; }
+
+/* ================================================================
+   Chat Bar (persistent bottom bar)
+   ================================================================ */
+#chat-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+  height: 50px; background: #161b22;
+  border-top: 1px solid #30363d;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 24px;
+}
+#chat-bar-input {
+  flex: 1; background: #0d1117; border: 1px solid #30363d;
+  border-radius: 6px; padding: 8px 14px; color: #e6edf3;
+  font-size: 0.9rem; outline: none;
+}
+#chat-bar-input:focus { border-color: #58a6ff; }
+#chat-bar-send {
+  padding: 8px 16px; height: 36px;
+  font-size: 0.85rem;
+}
+
+/* Chat Panel (slides up from bar) */
+#chat-panel {
+  position: fixed; bottom: 50px; left: 0; right: 0;
+  height: 60vh; z-index: 999;
+  background: #0d1117; border-top: 1px solid #30363d;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+}
+#chat-panel.open { transform: translateY(0); }
+#chat-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 24px; background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+#chat-panel-header h3 { font-size: 0.95rem; font-weight: 600; }
+#chat-panel-close {
+  background: none; border: none; color: #7d8590;
+  font-size: 1.2rem; cursor: pointer; padding: 4px 8px;
+}
+#chat-panel-close:hover { color: #e6edf3; }
+#chat-panel-messages {
+  flex: 1; overflow-y: auto; padding: 16px 24px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* Hide the chat bar when on the full Chat page */
+body.on-chat-page #chat-bar,
+body.on-chat-page #chat-panel { display: none; }
+
+/* Add bottom padding so chat bar doesn't overlap content */
+#app { padding-bottom: 70px; }
+
+/* ================================================================
+   Contact Cards
+   ================================================================ */
+.contact-card {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 8px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 8px;
+}
+.contact-card .contact-info { flex: 1; }
+.contact-card .contact-name {
+  font-weight: 600; font-size: 0.95rem;
+}
+.contact-card .contact-nickname {
+  color: #7d8590; font-size: 0.85rem;
+}
+.contact-card .contact-relationship {
+  display: inline-block; padding: 1px 8px;
+  border-radius: 10px; font-size: 0.7rem;
+  font-weight: 600; text-transform: uppercase;
+  background: rgba(63,185,80,.15); color: #3fb950;
+  margin-left: 6px;
+}
+.contact-links {
+  display: flex; gap: 8px; margin-top: 4px;
+}
+.contact-links a {
+  font-size: 0.8rem; color: #58a6ff;
+}
+.contact-goals-list {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
+}
+.contact-goal-tag {
+  padding: 1px 8px; border-radius: 10px; font-size: 0.7rem;
+  background: rgba(88,166,255,.12); color: #58a6ff;
+}
+.contact-actions-col {
+  display: flex; gap: 4px;
+}
+
+/* ================================================================
+   Contacts Page
+   ================================================================ */
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .contacts-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -535,6 +641,7 @@ nav {
   <div class="nav-links" id="navLinks">
     <a href="#home" class="nav-link active" data-page="home">Home</a>
     <a href="#goals" class="nav-link" data-page="goals">Goals</a>
+    <a href="#contacts" class="nav-link" data-page="contacts">Contacts</a>
     <a href="#chat" class="nav-link" data-page="chat">Chat</a>
     <a href="#activity" class="nav-link" data-page="activity">Activity</a>
   </div>
@@ -590,6 +697,90 @@ nav {
   </div>
 </div>
 
+<!-- Edit Goal Modal -->
+<div class="modal-overlay" id="editGoalModal">
+  <div class="modal">
+    <h2>Edit Goal</h2>
+    <input type="hidden" id="editGoalOrigName">
+    <input type="hidden" id="editGoalScope">
+    <input type="hidden" id="editGoalScopeName">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="editGoalName">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="editGoalDescription" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Key People (one per line)</label>
+      <textarea id="editGoalPeople" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Icon (emoji)</label>
+      <input type="text" id="editGoalIcon" maxlength="4" style="width:80px;">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-danger" onclick="deleteGoal()" style="margin-right:auto;">Delete</button>
+      <button class="btn" onclick="closeModal('editGoalModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveGoalBtn" onclick="saveGoalEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <h2 id="contactModalTitle">Add Contact</h2>
+    <input type="hidden" id="contactId">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="contactName" placeholder="Full name">
+    </div>
+    <div class="form-group">
+      <label>Nickname</label>
+      <input type="text" id="contactNickname" placeholder="Optional">
+    </div>
+    <div class="form-group">
+      <label>Relationship</label>
+      <input type="text" id="contactRelationship" placeholder="e.g. colleague, friend">
+    </div>
+    <div class="form-group">
+      <label>Phone</label>
+      <input type="text" id="contactPhone" placeholder="e.g. 555-123-4567">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="text" id="contactEmail" placeholder="e.g. name@example.com">
+    </div>
+    <div class="form-group">
+      <label>Goals (comma separated)</label>
+      <input type="text" id="contactGoals" placeholder="e.g. Project Alpha, Weekly Sync">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('contactModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveContactBtn" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persistent Chat Bar -->
+<div id="chat-bar">
+  <input type="text" id="chat-bar-input" placeholder="Ask me anything..."
+    onfocus="openChatPanel()"
+    onkeydown="if(event.key==='Enter'){event.preventDefault();sendBarChat();}">
+  <button class="btn btn-accent" id="chat-bar-send" onclick="sendBarChat()">Send</button>
+</div>
+
+<!-- Chat Panel (slides up) -->
+<div id="chat-panel">
+  <div id="chat-panel-header">
+    <h3>Chat</h3>
+    <button id="chat-panel-close" onclick="closeChatPanel()">&times;</button>
+  </div>
+  <div id="chat-panel-messages"></div>
+</div>
+
 <script>
 /* ================================================================
    State
@@ -606,9 +797,11 @@ const state = {
   memory: [],
   actions: [],
   scopes: [],
+  contacts: [],
   signalSources: [],
   ws: null,
   chatSending: false,
+  chatPanelOpen: false,
   editingPendingId: null,
 };
 
@@ -621,6 +814,12 @@ function navigate(hash) {
   const raw = (hash || '#home').replace('#', '');
   state.currentPage = raw;
   updateNavLinks(raw);
+  // Toggle chat bar visibility based on page
+  if (raw === 'chat') {
+    document.body.classList.add('on-chat-page');
+  } else {
+    document.body.classList.remove('on-chat-page');
+  }
   renderCurrentPage();
   closeMobileNav();
 }
@@ -629,7 +828,7 @@ function updateNavLinks(page) {
   const base = page.split('/')[0];
   document.querySelectorAll('.nav-link').forEach(function(l) {
     var p = l.dataset.page;
-    l.classList.toggle('active', p === base || (p === 'goals' && page.startsWith('goal/')));
+    l.classList.toggle('active', p === base || (p === 'goals' && page.startsWith('goal/')) || (p === 'contacts' && page.startsWith('contact/')));
   });
 }
 
@@ -645,6 +844,7 @@ function renderCurrentPage() {
     var name = decodeURIComponent(parts.slice(2).join('/'));
     renderGoalDetail(scope, name);
   }
+  else if (page === 'contacts') renderContacts();
   else if (page === 'chat') renderChat();
   else if (page === 'activity') renderActivity();
   else renderHome();
@@ -781,6 +981,7 @@ async function loadConversation() {
       state.conversation = msgs;
       state.conversationKnownLen = msgs.length;
       if (state.currentPage === 'chat') renderChatMessages();
+      if (state.chatPanelOpen) renderChatPanelMessages();
     }
   } catch(e) { console.error('loadConversation', e); }
 }
@@ -790,13 +991,16 @@ async function loadSignalSources() {
 async function loadScopes() {
   try { state.scopes = await api('/api/scopes'); } catch(e) { console.error('loadScopes', e); }
 }
+async function loadContacts() {
+  try { state.contacts = await api('/api/contacts'); } catch(e) { console.error('loadContacts', e); }
+}
 
 async function loadAll() {
   await Promise.all([
     loadGoals(), loadProposed(), loadPending(),
     loadMemory(), loadActions(), loadAnalysis(),
     loadSignals(), loadConversation(),
-    loadSignalSources(), loadScopes(),
+    loadSignalSources(), loadScopes(), loadContacts(),
   ]);
   renderCurrentPage();
 }
@@ -1102,22 +1306,34 @@ function renderGoalDetail(scopeStr, name) {
   // Header
   html += '<div class="detail-header">' +
     '<div class="detail-icon">' + (goal.icon || '&#9898;') + '</div>' +
-    '<div>' +
+    '<div style="flex:1;">' +
     '<div class="detail-name">' + esc(goal.name) + '</div>' +
     '<span class="badge badge-blue">' + esc(scopeLabel(goal.scope, goal.scope_name)) + '</span>' +
     (goal.status ? ' <span class="badge badge-green">' + esc(goal.status) + '</span>' : '') +
-    '</div></div>';
+    '</div>' +
+    '<button class="btn btn-sm" onclick="openEditGoalModal(\'' + esc(scopeStr) + '\', \'' + esc(goal.name).replace(/'/g, "\\'") + '\')">Edit</button>' +
+    '</div>';
 
   // Description
   if (goal.description) {
     html += '<div class="detail-desc">' + esc(goal.description) + '</div>';
   }
 
-  // Key People
+  // Key People (with contact cards)
   if (goal.key_people && goal.key_people.length > 0) {
-    html += '<div class="people-tags">';
+    html += '<div class="section"><div class="section-title">Key People</div>';
     goal.key_people.forEach(function(p) {
-      html += '<span class="person-tag">' + esc(p) + '</span>';
+      var contact = findContactByName(p);
+      if (contact) {
+        html += renderContactCard(contact);
+      } else {
+        html += '<div class="contact-card">' +
+          '<div class="contact-info">' +
+          '<span class="contact-name">' + esc(p) + '</span>' +
+          '</div>' +
+          '<button class="btn btn-sm" onclick="openCreateContactFromName(\'' + esc(p).replace(/'/g, "\\'") + '\')">Create contact</button>' +
+          '</div>';
+      }
     });
     html += '</div>';
   }
@@ -1561,6 +1777,330 @@ async function filterSignals() {
 }
 
 /* ================================================================
+   Goal Editing
+   ================================================================ */
+function openEditGoalModal(scopeStr, goalName) {
+  var goal = state.goals.find(function(g) {
+    return scopeKey(g.scope, g.scope_name) === scopeStr && g.name === goalName;
+  });
+  if (!goal) return;
+  document.getElementById('editGoalOrigName').value = goal.name;
+  document.getElementById('editGoalScope').value = goal.scope;
+  document.getElementById('editGoalScopeName').value = goal.scope_name || '';
+  document.getElementById('editGoalName').value = goal.name;
+  document.getElementById('editGoalDescription').value = goal.description || '';
+  document.getElementById('editGoalPeople').value = (goal.key_people || []).join('\n');
+  document.getElementById('editGoalIcon').value = goal.icon || '';
+  openModal('editGoalModal');
+}
+
+async function saveGoalEdit() {
+  var btn = document.getElementById('saveGoalBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    var origName = document.getElementById('editGoalOrigName').value;
+    var scope = document.getElementById('editGoalScope').value;
+    var scopeName = document.getElementById('editGoalScopeName').value || null;
+    var newName = document.getElementById('editGoalName').value.trim();
+    var description = document.getElementById('editGoalDescription').value.trim();
+    var people = document.getElementById('editGoalPeople').value
+      .split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    var icon = document.getElementById('editGoalIcon').value.trim();
+
+    if (!newName) { alert('Name is required'); return; }
+
+    // If name changed, delete old goal first
+    if (origName !== newName) {
+      await api('/api/goals', {
+        method: 'DELETE',
+        body: JSON.stringify({ scope: scope, scope_name: scopeName, name: origName }),
+      });
+    }
+
+    // Upsert with new data
+    await api('/api/goals', {
+      method: 'POST',
+      body: JSON.stringify({
+        scope: scope,
+        scope_name: scopeName,
+        name: newName,
+        description: description,
+        key_people: people,
+        icon: icon,
+      }),
+    });
+    closeModal('editGoalModal');
+    await loadGoals();
+    // Navigate to updated goal
+    var sk = scopeName ? scope + '/' + scopeName : scope;
+    location.hash = '#goal/' + sk + '/' + encodeURIComponent(newName);
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+async function deleteGoal() {
+  var name = document.getElementById('editGoalOrigName').value;
+  if (!confirm('Delete goal "' + name + '"? This cannot be undone.')) return;
+  try {
+    var scope = document.getElementById('editGoalScope').value;
+    var scopeName = document.getElementById('editGoalScopeName').value || null;
+    await api('/api/goals', {
+      method: 'DELETE',
+      body: JSON.stringify({ scope: scope, scope_name: scopeName, name: name }),
+    });
+    closeModal('editGoalModal');
+    await loadGoals();
+    location.hash = '#goals';
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+/* ================================================================
+   Contacts
+   ================================================================ */
+function findContactByName(personStr) {
+  if (!personStr) return null;
+  var lower = personStr.toLowerCase();
+  return state.contacts.find(function(c) {
+    if (c.name && c.name.toLowerCase() === lower) return true;
+    if (c.nickname && c.nickname.toLowerCase() === lower) return true;
+    // Check if the person string contains the contact name
+    if (c.name && lower.indexOf(c.name.toLowerCase()) !== -1) return true;
+    if (c.nickname && lower.indexOf(c.nickname.toLowerCase()) !== -1) return true;
+    // Check partial first name match
+    var firstName = (c.name || '').split(' ')[0].toLowerCase();
+    if (firstName && firstName === lower) return true;
+    return false;
+  });
+}
+
+function renderContactCard(contact) {
+  var nickname = contact.nickname ? ' (' + esc(contact.nickname) + ')' : '';
+  var phone = contact.phone ? '<a href="tel:' + esc(contact.phone) + '">' + esc(contact.phone) + '</a>' : '';
+  var email = contact.email ? '<a href="mailto:' + esc(contact.email) + '">' + esc(contact.email) + '</a>' : '';
+  var links = '';
+  if (phone || email) {
+    links = '<div class="contact-links">' + phone + (phone && email ? ' &bull; ' : '') + email + '</div>';
+  }
+  var goals = '';
+  if (contact.goals && contact.goals.length > 0) {
+    goals = '<div class="contact-goals-list">';
+    contact.goals.forEach(function(g) {
+      goals += '<span class="contact-goal-tag">' + esc(g) + '</span>';
+    });
+    goals += '</div>';
+  }
+  return '<div class="contact-card">' +
+    '<div class="contact-info">' +
+    '<span class="contact-name">' + esc(contact.name) + nickname + '</span>' +
+    (contact.relationship ? '<span class="contact-relationship">' + esc(contact.relationship) + '</span>' : '') +
+    links + goals +
+    '</div>' +
+    '<div class="contact-actions-col">' +
+    '<button class="btn btn-sm" onclick="openEditContact(\'' + esc(contact.id) + '\')">Edit</button>' +
+    '</div>' +
+    '</div>';
+}
+
+function renderContacts() {
+  var html = '<div class="page-header">' +
+    '<h1>Contacts</h1>' +
+    '<button class="btn btn-primary" onclick="openNewContactModal()">+ Add Contact</button>' +
+    '</div>';
+
+  if (state.contacts.length === 0) {
+    html += '<div class="empty-state">No contacts yet.</div>';
+  } else {
+    html += '<div class="contacts-grid">';
+    state.contacts.forEach(function(c) {
+      html += renderContactCard(c);
+    });
+    html += '</div>';
+  }
+
+  appEl.innerHTML = html;
+}
+
+function openNewContactModal() {
+  document.getElementById('contactModalTitle').textContent = 'Add Contact';
+  document.getElementById('contactId').value = '';
+  document.getElementById('contactName').value = '';
+  document.getElementById('contactNickname').value = '';
+  document.getElementById('contactRelationship').value = '';
+  document.getElementById('contactPhone').value = '';
+  document.getElementById('contactEmail').value = '';
+  document.getElementById('contactGoals').value = '';
+  openModal('contactModal');
+}
+
+function openCreateContactFromName(name) {
+  document.getElementById('contactModalTitle').textContent = 'Create Contact';
+  document.getElementById('contactId').value = '';
+  document.getElementById('contactName').value = name;
+  document.getElementById('contactNickname').value = '';
+  document.getElementById('contactRelationship').value = '';
+  document.getElementById('contactPhone').value = '';
+  document.getElementById('contactEmail').value = '';
+  document.getElementById('contactGoals').value = '';
+  openModal('contactModal');
+}
+
+function openEditContact(id) {
+  var contact = state.contacts.find(function(c) { return c.id === id; });
+  if (!contact) return;
+  document.getElementById('contactModalTitle').textContent = 'Edit Contact';
+  document.getElementById('contactId').value = contact.id;
+  document.getElementById('contactName').value = contact.name || '';
+  document.getElementById('contactNickname').value = contact.nickname || '';
+  document.getElementById('contactRelationship').value = contact.relationship || '';
+  document.getElementById('contactPhone').value = contact.phone || '';
+  document.getElementById('contactEmail').value = contact.email || '';
+  document.getElementById('contactGoals').value = (contact.goals || []).join(', ');
+  openModal('contactModal');
+}
+
+async function saveContact() {
+  var btn = document.getElementById('saveContactBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    var id = document.getElementById('contactId').value;
+    var name = document.getElementById('contactName').value.trim();
+    if (!name) { alert('Name is required'); return; }
+    var body = {
+      name: name,
+      nickname: document.getElementById('contactNickname').value.trim() || null,
+      relationship: document.getElementById('contactRelationship').value.trim() || null,
+      phone: document.getElementById('contactPhone').value.trim() || null,
+      email: document.getElementById('contactEmail').value.trim() || null,
+      goals: document.getElementById('contactGoals').value
+        .split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    };
+    if (id) body.id = id;
+    // Build channels from phone/email
+    var channels = {};
+    if (body.phone) channels.imessage = body.phone;
+    if (body.email) channels.email = body.email;
+    body.channels = channels;
+
+    await api('/api/contacts', { method: 'POST', body: JSON.stringify(body) });
+    closeModal('contactModal');
+    await loadContacts();
+    renderCurrentPage();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+async function deleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  try {
+    await api('/api/contacts/' + id, { method: 'DELETE' });
+    await loadContacts();
+    renderCurrentPage();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+/* ================================================================
+   Persistent Chat Bar & Panel
+   ================================================================ */
+function openChatPanel() {
+  state.chatPanelOpen = true;
+  document.getElementById('chat-panel').classList.add('open');
+  renderChatPanelMessages();
+}
+
+function closeChatPanel() {
+  state.chatPanelOpen = false;
+  document.getElementById('chat-panel').classList.remove('open');
+}
+
+function renderChatPanelMessages() {
+  var container = document.getElementById('chat-panel-messages');
+  if (!container) return;
+  if (state.conversation.length === 0) {
+    container.innerHTML = '<div class="chat-welcome" style="padding:30px 20px;">' +
+      '<h2>Hi David</h2>' +
+      '<p>Ask me anything about your goals, schedule, or tasks.</p>' +
+      '</div>';
+    return;
+  }
+  var html = '';
+  state.conversation.forEach(function(msg) {
+    var isUser = msg.role === 'user';
+    var isProactive = msg.proactive;
+    var cls = isUser ? 'msg msg-user' : (isProactive ? 'msg msg-proactive' : 'msg msg-agent');
+    var content = isUser ? esc(msg.content) : renderMarkdown(msg.content || '');
+    var prefix = isProactive ? '<span style="color:#d29922;">&#128276;</span> ' : '';
+    html += '<div class="' + cls + '">' +
+      '<div class="msg-content">' + prefix + content + '</div>' +
+      '<div class="msg-time">' + fmtTime(msg.timestamp) + '</div>' +
+      '</div>';
+  });
+  if (state.chatSending) {
+    html += '<div class="thinking">Thinking<span class="thinking-dots"></span></div>';
+  }
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendBarChat() {
+  var input = document.getElementById('chat-bar-input');
+  var msg = input.value.trim();
+  if (!msg || state.chatSending) return;
+
+  input.value = '';
+  state.chatSending = true;
+
+  // Open panel if not open
+  if (!state.chatPanelOpen) openChatPanel();
+
+  // Optimistic add
+  state.conversation.push({
+    role: 'user',
+    content: msg,
+    timestamp: new Date().toISOString(),
+  });
+  state.conversationKnownLen = state.conversation.length;
+  renderChatPanelMessages();
+  // Also update full chat page if visible
+  if (state.currentPage === 'chat') renderChatMessages();
+
+  try {
+    var res = await api('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: msg }),
+    });
+    state.conversation.push({
+      role: 'agent',
+      content: res.response,
+      timestamp: new Date().toISOString(),
+    });
+    state.conversationKnownLen = state.conversation.length;
+  } catch(e) {
+    state.conversation.push({
+      role: 'agent',
+      content: 'Sorry, I encountered an error. Please try again.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+  state.chatSending = false;
+  renderChatPanelMessages();
+  if (state.currentPage === 'chat') renderChatMessages();
+}
+
+/* ================================================================
    Keyboard shortcuts
    ================================================================ */
 document.addEventListener('keydown', function(e) {
@@ -1568,6 +2108,7 @@ document.addEventListener('keydown', function(e) {
     document.querySelectorAll('.modal-overlay.open').forEach(function(m) {
       m.classList.remove('open');
     });
+    if (state.chatPanelOpen) closeChatPanel();
   }
 });
 
@@ -1576,6 +2117,16 @@ document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) overlay.classList.remove('open');
   });
+});
+
+// Close chat panel when clicking outside
+document.addEventListener('click', function(e) {
+  if (!state.chatPanelOpen) return;
+  var panel = document.getElementById('chat-panel');
+  var bar = document.getElementById('chat-bar');
+  if (!panel.contains(e.target) && !bar.contains(e.target)) {
+    closeChatPanel();
+  }
 });
 
 /* ================================================================
