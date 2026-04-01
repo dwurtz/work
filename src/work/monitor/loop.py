@@ -1,4 +1,4 @@
-"""MonitorLoop -- main monitoring loop that collects signals, matches to goals, and updates context."""
+"""MonitorLoop -- main monitoring loop that collects signals and periodically analyzes them."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 
 from work.config import (
     COMPACT_INTERVAL,
-    MATCH_INTERVAL,
     SIGNAL_INTERVAL,
 )
 from work.context import ContextStore, ScopeManager
@@ -19,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class MonitorLoop:
-    """Main monitoring loop that collects signals, matches to goals, and updates context files."""
+    """Main monitoring loop: perception (3s) + analysis/compaction (5min)."""
 
     def __init__(
         self,
@@ -30,17 +29,14 @@ class MonitorLoop:
         self.scope_manager = scope_manager
         self.gemini = gemini
         self.collector = collector
-        self.pending_signals: list[Signal] = []
         self.running = False
         self.display: MonitorDisplay | None = None
 
         # Stats
-        self.matched_signal_ids: set[str] = set()
         self.signals_collected = 0
         self.matches_found = 0
         self.last_signal_time: datetime | None = None
-        self.last_match_time: datetime | None = None
-        self.last_compact_time: datetime | None = None
+        self.last_analysis_time: datetime | None = None
         self.phase: str = "IDLE"
 
     async def run(self, interactive: bool = False) -> None:
@@ -54,11 +50,10 @@ class MonitorLoop:
         self.running = True
         log.info("Monitor loop starting (interactive=%s)", interactive)
 
-        # Launch the three cycles as concurrent tasks
+        # Launch the two cycles as concurrent tasks
         tasks = [
             asyncio.create_task(self._signal_loop()),
-            asyncio.create_task(self._match_loop()),
-            asyncio.create_task(self._compact_loop()),
+            asyncio.create_task(self._analysis_loop()),
         ]
         if interactive and self.display:
             tasks.append(asyncio.create_task(self._display_loop()))
@@ -81,24 +76,14 @@ class MonitorLoop:
                 log.exception("Error in signal collection cycle")
             await asyncio.sleep(SIGNAL_INTERVAL)
 
-    async def _match_loop(self) -> None:
-        """Run LLM matching every MATCH_INTERVAL seconds."""
-        await asyncio.sleep(5)  # let signals accumulate first
-        while self.running:
-            try:
-                await self._match_cycle()
-            except Exception:
-                log.exception("Error in match cycle")
-            await asyncio.sleep(MATCH_INTERVAL)
-
-    async def _compact_loop(self) -> None:
-        """Compact hot buffers every COMPACT_INTERVAL seconds."""
+    async def _analysis_loop(self) -> None:
+        """Run combined analysis + compaction every COMPACT_INTERVAL seconds."""
         await asyncio.sleep(COMPACT_INTERVAL)
         while self.running:
             try:
-                await self._compact_cycle()
+                await self._analysis_cycle()
             except Exception:
-                log.exception("Error in compact cycle")
+                log.exception("Error in analysis cycle")
             await asyncio.sleep(COMPACT_INTERVAL)
 
     async def _display_loop(self) -> None:
@@ -170,15 +155,12 @@ class MonitorLoop:
                     analyzed = await self._analyze_screenshot(sig)
                     if analyzed:
                         processed.append(analyzed)
-                        # Notify what we're seeing on screen
-                        self._notify("Screen", analyzed.text[:200])
                 else:
                     processed.append(sig)
 
-            self.pending_signals.extend(processed)
             self.signals_collected += len(processed)
             self.last_signal_time = datetime.now(timezone.utc)
-            log.info("Collected %d new signals (%d pending)", len(processed), len(self.pending_signals))
+            log.info("Collected %d new signals", len(processed))
 
             if self.display:
                 for sig in processed:
@@ -215,188 +197,146 @@ class MonitorLoop:
             except OSError:
                 pass
 
-    async def _match_cycle(self) -> None:
-        """Send pending signals to Gemini for goal matching."""
-        if not self.pending_signals:
-            return
-
+    async def _analysis_cycle(self) -> None:
+        """Combined analysis + compaction: match signals, extract facts, update memory/actions."""
         self.phase = "THINKING"
 
-        # Snapshot and clear pending
-        batch = list(self.pending_signals)
-        self.pending_signals.clear()
-
-        # Build signals text
-        signals_text = "\n".join(
-            f"- [{s.source}] {s.sender}: {s.text}" for s in batch
+        # 1. Read last 5 minutes of signals from log
+        loop = asyncio.get_running_loop()
+        signals_text = await loop.run_in_executor(
+            None, self.collector.get_recent_signals_from_log, 5
         )
 
-        # Include unmatched history for pattern detection
-        unmatched_history = self.collector.get_unmatched_history_summary(self.matched_signal_ids)
-        if unmatched_history:
-            signals_text += (
-                "\n\nRECENT UNMATCHED SIGNALS (for pattern detection — these were previously skipped):\n"
-                + unmatched_history
-            )
-
-        # Get all goals across scopes
-        goals_text = self.scope_manager.all_goals()
-        if not goals_text.strip():
-            log.info("No goals defined; skipping match cycle")
-            return
-
-        log.info("Matching %d signals against goals...", len(batch))
-        matches = await self.gemini.match_signals(signals_text, goals_text)
-
-        if not matches:
-            log.info("No matches found")
+        if not signals_text.strip():
+            log.info("No recent signals for analysis")
             self.phase = "IDLE"
             return
 
-        # Show ALL results in display (matches and non-matches with reasoning)
-        actual_matches = [m for m in matches if m.get("matched", True) and m.get("confidence", "none") != "none"]
-        self.matches_found += len(actual_matches)
-        self.last_match_time = datetime.now(timezone.utc)
-        log.info("Found %d matches out of %d signals", len(actual_matches), len(matches))
+        # 2. Build goals text from all scopes
+        goals_text = self.scope_manager.all_goals()
+        if not goals_text.strip():
+            log.info("No goals defined; skipping analysis cycle")
+            self.phase = "IDLE"
+            return
 
-        # Show everything in display and notify reasoning
-        skip_reasons = []
+        # 3. Build existing memory text from all scopes
+        existing_memories: dict[str, str] = {}
+        for scope_type, name in self.scope_manager.list_scopes():
+            store = self.scope_manager.get_store(scope_type, name)
+            label = f"{scope_type}/{name}" if name else scope_type
+            existing_memories[label] = store.read_memory()
+
+        # 4. Call combined analysis
+        log.info("Running analysis on recent signals...")
+        result = await self.gemini.analyze_and_compact(
+            signals_text, goals_text, existing_memories
+        )
+
+        # 5. Clear reasoning panel for fresh results
+        if self.display:
+            self.display.matches_log.clear()
+
+        # 6. Process matches
+        matches = result.get("matches", [])
+        skips = result.get("skips", [])
+        new_facts = result.get("new_facts", [])
+        commitments = result.get("commitments", [])
+        proposed_goals = result.get("proposed_goals", [])
+
+        self.matches_found += len(matches)
+        log.info(
+            "Analysis: %d matches, %d skips, %d facts, %d commitments, %d proposed goals",
+            len(matches), len(skips), len(new_facts), len(commitments), len(proposed_goals),
+        )
+
+        # Show matches in display and notify
         for match in matches:
             if self.display:
                 self.display.show_match(match)
-
-            matched = match.get("matched", False)
-            conf = match.get("confidence", "none")
-            reasoning = match.get("reasoning", "")
-
-            if match.get("proposed_goal"):
-                pg = match["proposed_goal"]
-                log.info("Goal proposed: %s", pg.get("name", "?"))
-                self._notify(
-                    f"New goal? {pg.get('name', '?')}",
-                    pg.get("description", ""),
-                )
-            elif matched and conf in ("medium", "high"):
+            conf = match.get("confidence", "low")
+            if conf in ("medium", "high"):
                 goal = match.get("goal", "?")
+                reasoning = match.get("reasoning", "")
                 self._notify(
                     f"[{conf.upper()}] {goal}",
                     reasoning[:200],
                 )
-            elif not matched:
-                summary = match.get("signal_summary", "")[:40]
-                skip_reasons.append(summary)
 
-        # Single notification summarizing all skips
-        if skip_reasons and not actual_matches:
+        # Show skips in display
+        skip_summaries = []
+        for skip in skips:
+            if self.display:
+                self.display.show_match({
+                    "matched": False,
+                    "signal_summary": skip.get("signal_summary", ""),
+                    "reasoning": skip.get("reasoning", ""),
+                    "confidence": "none",
+                })
+            skip_summaries.append(skip.get("signal_summary", "")[:40])
+
+        # Batch skip notification
+        if skip_summaries and not matches:
             self._notify(
-                f"Observed {len(skip_reasons)} signals, no goal match",
-                "; ".join(skip_reasons)[:200],
+                f"Observed {len(skip_summaries)} signals, no goal match",
+                "; ".join(skip_summaries)[:200],
             )
-        elif skip_reasons:
+        elif skip_summaries and matches:
             self._notify(
-                f"Matched {len(actual_matches)}, skipped {len(skip_reasons)}",
-                "; ".join(r.get("signal_summary", "")[:30] for r in actual_matches)[:200],
+                f"Matched {len(matches)}, skipped {len(skip_summaries)}",
+                "; ".join(m.get("signal_summary", "")[:30] for m in matches)[:200],
             )
 
-        # Route actual matches to the correct scope's hot buffer
-        high_confidence_scopes: set[tuple[str, str | None]] = set()
-
-        # Track matched signal IDs so they don't appear in unmatched history
-        for s in batch:
-            for m in actual_matches:
-                if m.get("signal_summary", "") in s.text or s.text[:30] in m.get("signal_summary", ""):
-                    self.matched_signal_ids.add(s.id_key)
-
-        for match in actual_matches:
-            scope_key = self._parse_scope(match.get("scope", "personal"))
+        # 7. Write new facts to memory.md per scope
+        self.phase = "RECORDING"
+        today = datetime.now().strftime("%Y-%m-%d")
+        for fact_entry in new_facts:
+            scope_key = self._parse_scope(fact_entry.get("scope", "personal"))
+            fact = fact_entry.get("fact", "")
+            if not fact:
+                continue
             try:
                 store = self.scope_manager.get_store(*scope_key)
+                existing = store.read_memory()
+                new_entry = f"\n### {today}\n- {fact}\n"
+                store.update_memory(existing.rstrip() + "\n" + new_entry)
+                log.info("Added fact to %s: %s", scope_key, fact[:80])
             except (ValueError, FileNotFoundError):
-                log.warning("Scope %s not found, skipping match", scope_key)
+                log.warning("Scope %s not found for fact, skipping", scope_key)
+
+        # 8. Write commitments to actions.md per scope
+        for commitment_entry in commitments:
+            scope_key = self._parse_scope(commitment_entry.get("scope", "personal"))
+            commitment = commitment_entry.get("commitment", "")
+            deadline = commitment_entry.get("deadline")
+            if not commitment:
                 continue
-
-            # Append to hot buffer
-            entry = (
-                f"[{match.get('source', '?')}] "
-                f"({match.get('confidence', '?')}) "
-                f"goal={match.get('goal', '?')}: "
-                f"{match.get('signal_summary', '')}"
-            )
-            if match.get("action"):
-                entry += f" -> ACTION: {match['action']}"
-            store.append_to_hot_buffer(entry)
-
-            if match.get("confidence") == "high":
-                high_confidence_scopes.add(scope_key)
-                self._notify(
-                    f"[{match.get('goal', '?')}]",
-                    match.get("action") or match.get("signal_summary", ""),
-                )
-
-        # Trigger action prediction for high-confidence scopes
-        self.phase = "PREDICTING"
-        for scope_key in high_confidence_scopes:
-            await self._predict_actions(scope_key)
-
-        self.phase = "IDLE"
-
-    async def _predict_actions(self, scope_key: tuple[str, str | None]) -> None:
-        """Trigger action prediction for a specific scope."""
-        try:
-            store = self.scope_manager.get_store(*scope_key)
-            goals_text = store.read_goals()
-            memory_text = store.read_memory()
-            hot_buffer = store.read_hot_buffer()
-
-            # Build signals from hot buffer lines
-            signals: list[dict] = []
-            for line in hot_buffer.strip().split("\n"):
-                if line.strip():
-                    signals.append({"signal_summary": line, "source": "buffer"})
-
-            actions_md = await self.gemini.predict_actions(
-                goals_text, memory_text, signals
-            )
-            store.update_actions(actions_md)
-            log.info("Updated actions for scope %s", scope_key)
-        except Exception:
-            log.exception("Error predicting actions for scope %s", scope_key)
-
-    async def _compact_cycle(self) -> None:
-        """Compact hot buffers into memory entries."""
-        self.phase = "RECORDING"
-
-        for scope_type, name in self.scope_manager.list_scopes():
-            store = self.scope_manager.get_store(scope_type, name)
-            hot_buffer = store.read_hot_buffer()
-            if not hot_buffer.strip():
-                continue
-
-            log.info("Compacting hot buffer for scope (%s, %s)", scope_type, name)
-            goals_text = store.read_goals()
-            memory_text = store.read_memory()
-
             try:
-                new_memory, updated_actions = await self.gemini.compact_buffer(
-                    hot_buffer, memory_text, goals_text
+                store = self.scope_manager.get_store(*scope_key)
+                existing = store.read_actions()
+                deadline_str = f" (by {deadline})" if deadline else ""
+                new_entry = f"\n- [ ] {commitment}{deadline_str}\n"
+                store.update_actions(existing.rstrip() + "\n" + new_entry)
+                log.info("Added commitment to %s: %s", scope_key, commitment[:80])
+            except (ValueError, FileNotFoundError):
+                log.warning("Scope %s not found for commitment, skipping", scope_key)
+
+        # 9. Handle proposed goals
+        for pg in proposed_goals:
+            log.info("Goal proposed: %s", pg.get("name", "?"))
+            if self.display:
+                self.display.proposed_goals.append(pg)
+                idx = len(self.display.proposed_goals)
+                self.display.matches_log.append(
+                    f"[bold bright_yellow][ NEW GOAL? ] {pg.get('name', '?')}[/bold bright_yellow]\n"
+                    f"  [italic]{pg.get('description', '')}[/italic]\n"
+                    f"  [bold bright_yellow]Press {idx} to accept[/bold bright_yellow]"
                 )
+            self._notify(
+                f"New goal? {pg.get('name', '?')}",
+                pg.get("description", ""),
+            )
 
-                # Append new memory entries
-                if new_memory.strip():
-                    existing = store.read_memory()
-                    store.update_memory(existing.rstrip() + "\n\n" + new_memory.strip() + "\n")
-
-                # Update actions
-                if updated_actions.strip():
-                    store.update_actions(updated_actions)
-
-                # Clear the hot buffer
-                store.clear_hot_buffer()
-                log.info("Compacted scope (%s, %s)", scope_type, name)
-            except Exception:
-                log.exception("Error compacting scope (%s, %s)", scope_type, name)
-
-        self.last_compact_time = datetime.now(timezone.utc)
+        self.last_analysis_time = datetime.now(timezone.utc)
         self.phase = "IDLE"
 
     # ------------------------------------------------------------------

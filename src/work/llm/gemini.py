@@ -168,6 +168,142 @@ Return ONLY the JSON array."""
         return matches
 
     # ------------------------------------------------------------------
+    # Combined analysis + compaction (5-minute cycle)
+    # ------------------------------------------------------------------
+
+    async def analyze_and_compact(
+        self,
+        signals_text: str,
+        goals_text: str,
+        existing_memories: dict[str, str],
+    ) -> dict:
+        """Analyze signals against goals and extract memory/actions in one call.
+
+        Args:
+            signals_text: All signals from the last 5 minutes, one per line.
+            goals_text: All goals across all scopes.
+            existing_memories: Dict of scope label -> existing memory.md content.
+
+        Returns a dict with keys: matches, skips, new_facts, commitments, proposed_goals.
+        """
+        memory_context = ""
+        for scope_label, mem in existing_memories.items():
+            snippet = mem[-2000:] if mem else "(empty)"
+            memory_context += f"\n--- {scope_label} ---\n{snippet}\n"
+
+        prompt = f"""\
+You are a combined goal-matching + memory-extraction assistant for a productivity agent.
+
+GOALS (organized by scope -- personal, projects/<name>, org/<name>):
+{goals_text}
+
+EXISTING MEMORY (already persisted -- do NOT repeat these facts):
+{memory_context}
+
+SIGNALS FROM THE LAST 5 MINUTES:
+{signals_text}
+
+Analyze every signal and return a JSON object with these keys:
+
+1. "matches" — signals that match existing goals:
+[
+  {{
+    "signal_summary": "brief description",
+    "goal": "exact goal name from GOALS list",
+    "scope": "personal|projects/<name>|org/<name>",
+    "confidence": "low|medium|high",
+    "reasoning": "1 short sentence",
+    "action": "suggested next action if medium/high, else null"
+  }}
+]
+
+2. "skips" — signals that don't match any goal:
+[
+  {{
+    "signal_summary": "brief description",
+    "reasoning": "1 short sentence why no match"
+  }}
+]
+
+3. "new_facts" — NEW facts to add to memory.md (NOT already in existing memory):
+[
+  {{
+    "scope": "personal|projects/<name>|org/<name>",
+    "fact": "the fact to remember, with names/dates/amounts"
+  }}
+]
+
+4. "commitments" — commitments to track in actions.md:
+[
+  {{
+    "scope": "personal|projects/<name>|org/<name>",
+    "commitment": "who committed to what",
+    "deadline": "deadline if mentioned, else null"
+  }}
+]
+
+5. "proposed_goals" — new goals inferred from signal patterns:
+[
+  {{
+    "name": "short specific goal name",
+    "description": "what this goal is about",
+    "key_people": ["names if detectable"]
+  }}
+]
+
+RULES:
+- Use EXACT goal names from the GOALS list. Do not rephrase.
+- Match based on full description and key people, not just keyword overlap.
+- A person listed under a specific goal almost certainly produces signals for THAT goal.
+- Confidence: low=tangential, medium=clearly relevant, high=multiple corroborating signals + concrete action ready.
+- Only extract facts NOT already in existing memory. Check carefully.
+- Identify commitments: "I'll...", "by Friday", deadline language, task assignments.
+- Only propose goals when 2+ signals form a clear pattern. Be specific in naming.
+
+COMPOUND PATTERNS to watch for:
+- New Google Doc/Sheet + shared with people + calendar event = New project starting
+- 5+ emails from same sender + calendar event = Active deal or negotiation
+- Real estate tabs + address searches + partner messages = House hunting
+- Flight/hotel booking + calendar blocks + partner messages = Trip planning
+- Repeated visits to same tutorial/course site = Learning a new skill
+- School/activity emails + calendar events + partner messages = Child activity coordination
+- Same doc opened 3+ times without edits = Blocked or under review
+- Same person messaged 3+ days running = Active collaboration
+- Calendar event rescheduled 2+ times = Struggling to schedule
+- "I'll..." or deadline language in any message = Commitment with timeline
+
+Return ONLY the JSON object with all 5 keys."""
+
+        resp = await self.client.aio.models.generate_content(
+            model=PREDICT_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                max_output_tokens=8192,
+                temperature=0.2,
+            ),
+        )
+        try:
+            result = json.loads(resp.text)
+        except (json.JSONDecodeError, ValueError):
+            try:
+                result = _parse_json(resp.text)
+            except (json.JSONDecodeError, ValueError):
+                log.warning("analyze_and_compact: could not parse response: %s", resp.text[:200])
+                return {"matches": [], "skips": [], "new_facts": [], "commitments": [], "proposed_goals": []}
+
+        if not isinstance(result, dict):
+            log.warning("analyze_and_compact: expected dict, got %s", type(result))
+            return {"matches": [], "skips": [], "new_facts": [], "commitments": [], "proposed_goals": []}
+
+        # Ensure all keys exist
+        for key in ("matches", "skips", "new_facts", "commitments", "proposed_goals"):
+            if key not in result:
+                result[key] = []
+
+        return result
+
+    # ------------------------------------------------------------------
     # Screenshot analysis
     # ------------------------------------------------------------------
 

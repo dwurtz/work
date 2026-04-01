@@ -240,6 +240,31 @@ class SignalCollector:
         except Exception:
             log.exception("Failed to persist signal")
 
+    def get_recent_signals_from_log(self, minutes: int = 5) -> str:
+        """Read signal_log.jsonl and return all signals from the last N minutes as formatted text."""
+        from datetime import timedelta
+        cutoff = datetime.now() - timedelta(minutes=minutes)
+        lines: list[str] = []
+        if not self._signal_log_path.exists():
+            return ""
+        try:
+            with open(self._signal_log_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                        ts = datetime.fromisoformat(d["timestamp"])
+                        if ts >= cutoff:
+                            hm = ts.strftime("%H:%M")
+                            lines.append(f"[{hm}] [{d['source']}] {d['sender']}: {d['text']}")
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        continue
+        except Exception:
+            log.exception("Failed to read signal log for recent signals")
+        return "\n".join(lines)
+
     def should_screenshot(self, app: str, title: str) -> bool:
         """Return True if app/title changed since last check."""
         if app in IGNORED_APPS:

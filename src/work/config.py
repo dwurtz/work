@@ -13,9 +13,8 @@ SCOPES = ("personal", "projects", "org")
 
 # Monitor timing
 SIGNAL_INTERVAL = 3        # collect signals every N seconds
-MATCH_INTERVAL = 15         # run Gemini matching every N seconds
 SCREENSHOT_INTERVAL = 3     # screenshot on context change check
-COMPACT_INTERVAL = 3600     # compact hot buffer every hour
+COMPACT_INTERVAL = 300      # analysis + compaction every 5 minutes
 
 # Gemini models
 MONITOR_MODEL = "gemini-2.5-flash"           # cheap, fast signal matching
