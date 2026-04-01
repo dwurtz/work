@@ -102,7 +102,7 @@ IMPORTANT RULES:
 - Look for commitment-action gaps: someone said they'd do X but no evidence of follow-through.
 - Look for behavioral patterns: repeated viewing without editing may indicate being blocked.
 - If no signals match any goal, still return an entry for each with matched=false and your reasoning.
-- ALWAYS include reasoning — this is shown to the user so they can see what the system is thinking.
+- ALWAYS include reasoning — keep it to 1 SHORT sentence. Be concise.
 
 GOAL INFERENCE:
 - If you see a CLUSTER of unmatched signals that suggest a coherent activity (e.g. multiple real estate signals, or several signals about travel planning), add a special entry at the end:
@@ -149,7 +149,7 @@ Return ONLY the JSON array."""
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                max_output_tokens=2048,
+                max_output_tokens=8192,
                 temperature=0.2,
             ),
         )
