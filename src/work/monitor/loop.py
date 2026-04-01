@@ -254,11 +254,18 @@ class MonitorLoop:
             if self.display:
                 self.display.show_match(match)
             conf = match.get("confidence", "low")
-            if conf in ("medium", "high"):
+            if conf == "high":
+                goal = match.get("goal", "?")
+                reasoning = match.get("reasoning", "")
+                self._alert(
+                    f"[HIGH] {goal}",
+                    reasoning[:200],
+                )
+            elif conf == "medium":
                 goal = match.get("goal", "?")
                 reasoning = match.get("reasoning", "")
                 self._notify(
-                    f"[{conf.upper()}] {goal}",
+                    f"[MEDIUM] {goal}",
                     reasoning[:200],
                 )
 
@@ -331,7 +338,7 @@ class MonitorLoop:
                     f"  [italic]{pg.get('description', '')}[/italic]\n"
                     f"  [bold bright_yellow]Press {idx} to accept[/bold bright_yellow]"
                 )
-            self._notify(
+            self._alert(
                 f"New goal? {pg.get('name', '?')}",
                 pg.get("description", ""),
             )
@@ -375,12 +382,13 @@ class MonitorLoop:
     def _send_imessage(phone: str, message: str) -> None:
         """Send an iMessage to a phone number."""
         import subprocess
+        safe_msg = message[:300].replace('"', '').replace("'", "").replace("\\", "")
         try:
             script = f'''
             tell application "Messages"
                 set targetService to 1st account whose service type = iMessage
                 set targetBuddy to participant "{phone}" of targetService
-                send "{message}" to targetBuddy
+                send "{safe_msg}" to targetBuddy
             end tell
             '''
             subprocess.run(
@@ -389,6 +397,34 @@ class MonitorLoop:
             )
         except Exception:
             log.exception("iMessage send failed")
+
+    @staticmethod
+    def _send_email(subject: str, body: str) -> None:
+        """Send an email to yourself via gws gmail."""
+        import subprocess
+        import json
+        import base64
+
+        raw_msg = f"From: david@davidwurtz.com\nTo: david@davidwurtz.com\nSubject: [work] {subject}\n\n{body}"
+        encoded = base64.urlsafe_b64encode(raw_msg.encode()).decode()
+
+        try:
+            subprocess.run(
+                [
+                    "gws", "gmail", "users", "messages", "send",
+                    "--params", json.dumps({"userId": "me"}),
+                    "--json", json.dumps({"raw": encoded}),
+                ],
+                capture_output=True, timeout=15,
+            )
+        except Exception:
+            log.exception("Email send failed")
+
+    def _alert(self, title: str, body: str) -> None:
+        """Send notification via all channels: macOS, iMessage, and email."""
+        self._notify(title, body)
+        self._send_imessage("david@davidwurtz.com", f"[work] {title}: {body[:200]}")
+        self._send_email(title, body)
 
     def stop(self) -> None:
         self.running = False
