@@ -62,7 +62,9 @@ nav {
   font-size: 0.75rem; color: #7d8590;
   display: flex; align-items: center; gap: 8px;
 }
-.nav-status .dot { color: #3fb950; margin-right: 2px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.status-active { background: #3fb950; }
+.status-inactive { background: #f85149; }
 .nav-status .last-analysis {
   color: #7d8590; font-size: 0.72rem;
 }
@@ -748,7 +750,7 @@ body.on-chat-page #chat-panel { display: none; }
   </div>
   <span class="nav-spacer"></span>
   <span class="nav-status">
-    <span><span class="dot">&#9679;</span> monitoring</span>
+    <span id="monitorStatus"><span class="status-dot status-inactive"></span> checking...</span>
     <span class="last-analysis" id="lastAnalysisIndicator"></span>
   </span>
 </nav>
@@ -954,6 +956,7 @@ function renderCurrentPage() {
   else if (page === 'activity') renderActivity();
   else renderHome();
   updateLastAnalysis();
+  updateMonitorStatus();
 }
 
 /* ================================================================
@@ -1104,6 +1107,27 @@ function updateLastAnalysis() {
     }
   }
 }
+
+async function updateMonitorStatus() {
+  try {
+    var status = await api('/api/status');
+    var el = document.getElementById('monitorStatus');
+    if (!el) return;
+    if (status.monitor_running) {
+      el.innerHTML = '<span class="status-dot status-active"></span> monitoring';
+    } else {
+      el.innerHTML = '<span class="status-dot status-inactive"></span> stopped';
+    }
+    // Update last analysis time
+    if (status.last_analysis_time) {
+      var ago = timeAgo(status.last_analysis_time);
+      var la = document.getElementById('lastAnalysisIndicator');
+      if (la) la.textContent = 'Last analysis: ' + ago;
+    }
+  } catch(e) {}
+}
+// Poll every 10 seconds
+setInterval(updateMonitorStatus, 10000);
 
 /* ================================================================
    API
@@ -1521,6 +1545,10 @@ async function createGoal() {
 /* ================================================================
    Page: Goal Detail
    ================================================================ */
+function normalizeGoalName(n) {
+  return (n || '').toLowerCase().replace(/['']/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function renderGoalDetail(scopeStr, name) {
   var goal = state.goals.find(function(g) {
     return scopeKey(g.scope, g.scope_name) === scopeStr && g.name === name;
@@ -1578,7 +1606,7 @@ function renderGoalDetail(scopeStr, name) {
     var matches = a.matches || a.goal_matches || [];
     matches.forEach(function(m) {
       var gn = m.goal_name || m.goal || '';
-      if (gn === goal.name) {
+      if (normalizeGoalName(gn) === normalizeGoalName(goal.name)) {
         allMatches.push(Object.assign({}, m, { analysis_ts: a.timestamp || a.ts }));
       }
     });
@@ -1627,18 +1655,56 @@ function renderGoalDetail(scopeStr, name) {
     return a.scope === goal.scope && (a.scope_name || null) === (goal.scope_name || null);
   });
   if (scopeActions && scopeActions.content && scopeActions.content.trim()) {
-    var lines = scopeActions.content.trim().split('\n').filter(function(l) { return l.trim(); });
-    html += '<div class="section">' +
-      '<div class="section-title">Next Actions</div>' +
-      '<div class="card">';
-    lines.forEach(function(line) {
-      var text = line.replace(/^[\-\*\s]+/, '').replace(/^\[.\]\s*/, '');
-      var checked = /^\s*\[x\]/i.test(line);
-      html += '<div class="action-item">' +
-        '<div class="action-checkbox" style="' + (checked ? 'background:#238636;border-color:#238636;' : '') + '"></div>' +
-        '<span>' + esc(text) + '</span></div>';
-    });
-    html += '</div></div>';
+    // Filter actions to those relevant to this goal
+    var allActionLines = scopeActions.content.trim().split('\n');
+    var filteredActions = [];
+    var hasHeadings = allActionLines.some(function(l) { return /^##\s/.test(l.trim()); });
+
+    if (hasHeadings) {
+      // Structured format: only show lines under matching ## heading
+      var inMatchingSection = false;
+      allActionLines.forEach(function(l) {
+        var trimmed = l.trim();
+        if (/^##\s/.test(trimmed)) {
+          var heading = trimmed.replace(/^##\s+/, '');
+          inMatchingSection = normalizeGoalName(heading) === normalizeGoalName(goal.name);
+        } else if (/^#\s/.test(trimmed)) {
+          inMatchingSection = false;
+        } else if (inMatchingSection && trimmed) {
+          filteredActions.push(l);
+        }
+      });
+    } else {
+      // Flat list: filter by keyword matching against goal name and key people
+      var actionSearchTerms = [goal.name.toLowerCase()];
+      (goal.key_people || []).forEach(function(p) {
+        var parts = p.split(/[\s—\-(]+/);
+        if (parts[0] && parts[0].length > 2) actionSearchTerms.push(parts[0].toLowerCase());
+        actionSearchTerms.push(p.toLowerCase().split('—')[0].split('(')[0].trim());
+      });
+      allActionLines.forEach(function(l) {
+        var trimmed = l.trim();
+        if (!trimmed || /^#/.test(trimmed)) return;
+        var lower = l.toLowerCase();
+        if (actionSearchTerms.some(function(term) { return lower.indexOf(term) >= 0; })) {
+          filteredActions.push(l);
+        }
+      });
+    }
+
+    if (filteredActions.length > 0) {
+      html += '<div class="section">' +
+        '<div class="section-title">Next Actions</div>' +
+        '<div class="card">';
+      filteredActions.forEach(function(line) {
+        var text = line.replace(/^[\-\*\s]+/, '').replace(/^\[.\]\s*/, '');
+        var checked = /^\s*\[x\]/i.test(line);
+        html += '<div class="action-item">' +
+          '<div class="action-checkbox" style="' + (checked ? 'background:#238636;border-color:#238636;' : '') + '"></div>' +
+          '<span>' + esc(text) + '</span></div>';
+      });
+      html += '</div></div>';
+    }
   }
 
   // Memory — filtered to entries relevant to this goal
@@ -1686,7 +1752,7 @@ function renderGoalDetail(scopeStr, name) {
 
   // Pending Actions for this goal
   var goalPending = state.pending.filter(function(p) {
-    return p.status === 'pending' && (p.goal_name === goal.name || p.goal === goal.name);
+    return p.status === 'pending' && (normalizeGoalName(p.goal_name) === normalizeGoalName(goal.name) || normalizeGoalName(p.goal) === normalizeGoalName(goal.name));
   });
   if (goalPending.length > 0) {
     html += '<div class="section">' +
@@ -1728,6 +1794,20 @@ function expandMemory(btn) {
 }
 
 async function approvePending(id, btn) {
+  var action = state.pending.find(function(p) { return p.id === id; });
+  if (!action) return;
+
+  var type = action.type || '';
+  if (type === 'draft_email' || type === 'draft_message') {
+    var recipient = action.recipient || 'unknown';
+    var content = action.content || action.description || '';
+    var ok = confirm(
+      'Send this ' + type.replace('draft_', '') + ' to ' + recipient + '?\n\n' +
+      content.slice(0, 500)
+    );
+    if (!ok) return;
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
   try {

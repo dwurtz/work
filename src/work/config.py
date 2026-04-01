@@ -17,7 +17,6 @@ SCREENSHOT_INTERVAL = 3     # screenshot on context change check
 COMPACT_INTERVAL = 300      # analysis + compaction every 5 minutes
 
 # Gemini models
-MONITOR_MODEL = "gemini-2.5-flash"           # cheap, fast signal matching
 VISION_MODEL = "gemini-2.5-flash"           # screenshot analysis
 PREDICT_MODEL = "gemini-2.5-flash"          # action prediction
 AGENT_MODEL = "gemini-2.5-pro"              # interactive conversation

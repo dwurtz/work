@@ -193,6 +193,62 @@ class PendingEdit(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+@app.get("/api/status")
+def get_status():
+    """Check if monitor is running and return stats."""
+    # Check signal_log for recency
+    log_path = WORK_HOME / "signal_log.jsonl"
+    last_signal_time = None
+    if log_path.exists():
+        with open(log_path, 'rb') as f:
+            f.seek(0, 2)  # end of file
+            size = f.tell()
+            if size > 0:
+                f.seek(max(0, size - 2048))
+                lines = f.read().decode('utf-8', errors='replace').strip().split('\n')
+                for line in reversed(lines):
+                    try:
+                        d = json.loads(line.strip())
+                        last_signal_time = d.get("timestamp")
+                        break
+                    except Exception:
+                        continue
+
+    # Check analysis log for recency
+    analysis_path = WORK_HOME / "analysis_log.jsonl"
+    last_analysis_time = None
+    if analysis_path.exists():
+        with open(analysis_path, 'rb') as f:
+            f.seek(0, 2)
+            size = f.tell()
+            if size > 0:
+                f.seek(max(0, size - 2048))
+                lines = f.read().decode('utf-8', errors='replace').strip().split('\n')
+                for line in reversed(lines):
+                    try:
+                        d = json.loads(line.strip())
+                        last_analysis_time = d.get("timestamp")
+                        break
+                    except Exception:
+                        continue
+
+    # Monitor is "running" if last signal was within 30 seconds
+    monitor_running = False
+    if last_signal_time:
+        try:
+            last_dt = datetime.fromisoformat(last_signal_time.replace('Z', '+00:00'))
+            age = (datetime.now(timezone.utc) - last_dt).total_seconds()
+            monitor_running = age < 30
+        except Exception:
+            pass
+
+    return {
+        "monitor_running": monitor_running,
+        "last_signal_time": last_signal_time,
+        "last_analysis_time": last_analysis_time,
+    }
+
+
 @app.get("/api/signals")
 def get_signals(
     since: str | None = Query(None, description="ISO timestamp filter"),

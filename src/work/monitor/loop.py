@@ -218,6 +218,9 @@ class MonitorLoop:
 
         if not signals_text.strip():
             log.info("No recent signals for analysis")
+            # Still save the offset to avoid re-reading unparseable lines
+            if analysis_marker:
+                self.collector.save_analysis_marker(analysis_marker)
             self.phase = "IDLE"
             return
 
