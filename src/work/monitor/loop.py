@@ -94,11 +94,16 @@ class MonitorLoop:
 
             # Check for key input (non-blocking)
             key = await self._read_key()
-            if key and self.display.proposed_goals:
-                if key == "0":
+            if key:
+                if key == "g":
+                    # Toggle goals panel
+                    self.display.show_goals_panel = not self.display.show_goals_panel
+                    if self.display.show_goals_panel:
+                        self.display.goals_text = self.scope_manager.all_goals()
+                elif key == "0" and self.display.proposed_goals:
                     log.info("Dismissed all proposed goals")
                     self.display.proposed_goals.clear()
-                elif key.isdigit():
+                elif key.isdigit() and self.display.proposed_goals:
                     idx = int(key) - 1
                     if 0 <= idx < len(self.display.proposed_goals):
                         pg = self.display.proposed_goals.pop(idx)

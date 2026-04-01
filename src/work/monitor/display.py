@@ -42,6 +42,8 @@ class MonitorDisplay:
         self.signals_log: deque[str] = deque(maxlen=max_log)
         self.matches_log: deque[str] = deque(maxlen=max_log)
         self.proposed_goals: list[dict] = []  # pending proposed goals
+        self.goals_text: str = ""  # current goals for display
+        self.show_goals_panel: bool = False  # toggle with 'g'
         self.phase: str = "IDLE"
         self.real_match_count: int = 0
         self.skip_count: int = 0
@@ -133,8 +135,16 @@ class MonitorDisplay:
         header.append(f"  |  signals: {len(self.signals_log)}", style="dim")
         header.append(f"  |  matches: {self.real_match_count}", style="dim")
         header.append(f"  |  skipped: {self.skip_count}", style="dim")
+        header.append("  |  [g]oals", style="dim italic")
 
         parts = [Panel(header, border_style="bright_blue")]
+
+        # Goals panel (toggle with 'g')
+        if self.show_goals_panel and self.goals_text:
+            from rich.markdown import Markdown
+            parts.append(
+                Panel(Markdown(self.goals_text), title="Goals", border_style="bright_cyan")
+            )
 
         # Signals panel
         signals_text = Text()
