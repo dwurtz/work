@@ -473,6 +473,152 @@ html, body {
   overflow-y: auto;
 }
 
+/* ---- Pending Actions ---- */
+.pending-section {
+  border-bottom: 2px solid var(--accent);
+  background: rgba(88,166,255,0.03);
+}
+.pending-header {
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.pending-header:hover { background: rgba(255,255,255,0.03); }
+.pending-count {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #000;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 18px;
+  text-align: center;
+}
+.pending-header .scope-chevron { color: var(--accent); }
+.pending-header-spacer { flex: 1; }
+.pending-body { display: none; }
+.pending-body.open { display: block; }
+
+.pending-item {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.pending-item:hover { background: rgba(255,255,255,0.02); }
+.pending-item.priority-high { border-left: 3px solid var(--red); }
+.pending-item.priority-medium { border-left: 3px solid var(--yellow); }
+.pending-item.priority-low { border-left: 3px solid var(--muted); }
+
+.pending-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.pending-type-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.pending-type-research { background: rgba(88,166,255,0.15); color: var(--accent); }
+.pending-type-draft_email { background: rgba(0,255,255,0.15); color: cyan; }
+.pending-type-draft_message { background: rgba(63,185,80,0.15); color: var(--green); }
+.pending-type-create_document { background: rgba(218,112,214,0.15); color: orchid; }
+.pending-type-suggestion { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.pending-goal-name {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.pending-priority-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.pending-priority-high { background: rgba(248,81,73,0.2); color: var(--red); }
+.pending-priority-medium { background: rgba(210,153,34,0.2); color: var(--yellow); }
+.pending-priority-low { background: rgba(125,133,144,0.2); color: var(--muted); }
+
+.pending-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.pending-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.pending-recipient {
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.pending-content-preview {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 60px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+.pending-content-preview.expanded {
+  max-height: none;
+}
+.pending-content-preview:not(.expanded)::after {
+  content: '... click to expand';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, var(--bg) 40%);
+  padding: 0 8px 2px 20px;
+  font-style: italic;
+  color: var(--accent);
+  font-size: 9px;
+}
+.pending-actions-row {
+  display: flex;
+  gap: 6px;
+}
+.btn-yellow { border-color: var(--yellow); color: var(--yellow); }
+.btn-yellow:hover { background: rgba(210,153,34,0.15); }
+
+.pending-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: pending-spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+@keyframes pending-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ---- Buttons ---- */
 .btn {
   font-family: 'Inter', sans-serif;
@@ -619,6 +765,20 @@ html, body {
   </div>
 </div>
 
+<!-- Edit Pending Modal -->
+<div class="modal-overlay" id="editPendingModal">
+  <div class="modal" style="max-width:600px">
+    <h3>Edit Pending Action</h3>
+    <input type="hidden" id="editPendingId" />
+    <label>Content</label>
+    <textarea id="editPendingContent" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:11px"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEditPending()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditPending()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = '';
 const SOURCE_COLORS = {
@@ -635,6 +795,7 @@ let allAnalysis = [];
 let allProposed = [];
 let allMemory = [];
 let allActions = [];
+let allPending = [];
 let allScopes = [];
 let analysisMatches = []; // from analysis endpoint, keyed by goal
 let currentScopeFilter = '';
@@ -648,6 +809,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSignals(),
     loadGoals(),
     loadProposed(),
+    loadPending(),
     loadMemory(),
     loadActions(),
     loadAnalysis(),
@@ -663,6 +825,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Polling
   setInterval(loadGoals, 30000);
   setInterval(loadProposed, 30000);
+  setInterval(loadPending, 30000);
   setInterval(loadAnalysis, 60000);
   setInterval(checkMonitorStatus, 15000);
 
@@ -730,6 +893,13 @@ async function loadActions() {
   try {
     allActions = await fetchJSON('/api/actions');
   } catch(e) { console.error('loadActions', e); }
+}
+
+async function loadPending() {
+  try {
+    allPending = await fetchJSON('/api/pending');
+    renderGoals();
+  } catch(e) { console.error('loadPending', e); }
 }
 
 async function loadAnalysis() {
@@ -1023,6 +1193,11 @@ function renderGoals() {
     panel.appendChild(section);
   }
 
+  // Pending actions section
+  if (allPending.length > 0) {
+    panel.appendChild(createPendingSection());
+  }
+
   // Group goals by scope
   const grouped = {};
   allGoals.forEach(g => {
@@ -1277,6 +1452,165 @@ async function deleteGoal(scope, scopeName, name) {
     });
     await loadGoals();
   } catch(e) { console.error('deleteGoal', e); }
+}
+
+// ---- Pending Actions ----
+let pendingCollapsed = false;
+
+function createPendingSection() {
+  const section = document.createElement('div');
+  section.className = 'pending-section';
+
+  const header = document.createElement('div');
+  header.className = 'pending-header';
+  header.innerHTML = `
+    <span class="scope-chevron ${pendingCollapsed ? '' : 'open'}">&#9654;</span>
+    Pending Actions
+    <span class="pending-count">${allPending.length}</span>
+    <span class="pending-header-spacer"></span>
+  `;
+
+  const runBtn = document.createElement('button');
+  runBtn.className = 'btn btn-primary';
+  runBtn.style.cssText = 'font-size:10px;padding:2px 8px;';
+  runBtn.textContent = 'Run Agents';
+  runBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    runAgents(runBtn);
+  });
+  header.appendChild(runBtn);
+
+  section.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = `pending-body ${pendingCollapsed ? '' : 'open'}`;
+
+  allPending.forEach(p => {
+    body.appendChild(createPendingItem(p));
+  });
+
+  section.appendChild(body);
+
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.btn')) return;
+    pendingCollapsed = !pendingCollapsed;
+    body.classList.toggle('open');
+    header.querySelector('.scope-chevron').classList.toggle('open');
+  });
+
+  return section;
+}
+
+function createPendingItem(p) {
+  const item = document.createElement('div');
+  item.className = `pending-item priority-${p.priority || 'low'}`;
+
+  const typeBadgeClass = `pending-type-${(p.type || 'suggestion').replace(/\s+/g, '_')}`;
+
+  let html = `
+    <div class="pending-meta">
+      <span class="pending-type-badge ${typeBadgeClass}">${escapeHtml(p.type || 'suggestion')}</span>
+      <span class="pending-goal-name">${escapeHtml(p.goal_name || '')}</span>
+      <span class="pending-priority-badge pending-priority-${p.priority || 'low'}">${(p.priority || 'low').toUpperCase()}</span>
+    </div>
+    <div class="pending-title">${escapeHtml(p.title || 'Untitled')}</div>
+  `;
+
+  if (p.description) {
+    html += `<div class="pending-desc">${escapeHtml(p.description)}</div>`;
+  }
+
+  if (p.recipient) {
+    html += `<div class="pending-recipient">To: ${escapeHtml(p.recipient)}</div>`;
+  }
+
+  if (p.content) {
+    const preview = p.content.length > 200 ? p.content.slice(0, 200) : p.content;
+    html += `<div class="pending-content-preview" data-full="${escapeAttr(p.content)}" onclick="togglePendingContent(this)">${escapeHtml(preview)}</div>`;
+  }
+
+  html += `
+    <div class="pending-actions-row">
+      <button class="btn btn-green" onclick="approvePending('${escapeAttr(p.id)}', '${escapeAttr(p.type || '')}', '${escapeAttr(p.recipient || '')}')">Approve &#10003;</button>
+      <button class="btn btn-yellow" onclick="editPending('${escapeAttr(p.id)}', '${escapeAttr(p.content || '')}')">Edit &#9998;</button>
+      <button class="btn btn-red" onclick="dismissPending('${escapeAttr(p.id)}', '${escapeAttr(p.title || '')}')">Dismiss &#10007;</button>
+    </div>
+  `;
+
+  item.innerHTML = html;
+  return item;
+}
+
+function togglePendingContent(el) {
+  if (el.classList.contains('expanded')) {
+    el.classList.remove('expanded');
+    const full = el.getAttribute('data-full') || '';
+    el.textContent = full.length > 200 ? full.slice(0, 200) : full;
+  } else {
+    el.classList.add('expanded');
+    el.textContent = el.getAttribute('data-full') || '';
+  }
+}
+
+async function approvePending(id, type, recipient) {
+  if (type === 'draft_email' || type === 'draft_message') {
+    const target = recipient || 'the recipient';
+    if (!confirm(`Send this to ${target}?`)) return;
+  }
+  try {
+    await fetch(`${API}/api/pending/${id}/approve`, { method: 'POST' });
+    await loadPending();
+  } catch(e) { console.error('approvePending', e); }
+}
+
+function editPending(id, content) {
+  document.getElementById('editPendingId').value = id;
+  // Decode the escaped content back
+  const tmp = document.createElement('textarea');
+  tmp.innerHTML = content;
+  document.getElementById('editPendingContent').value = tmp.value;
+  document.getElementById('editPendingModal').classList.add('open');
+}
+
+function closeEditPending() {
+  document.getElementById('editPendingModal').classList.remove('open');
+}
+
+async function submitEditPending() {
+  const id = document.getElementById('editPendingId').value;
+  const content = document.getElementById('editPendingContent').value;
+  try {
+    await fetch(`${API}/api/pending/${id}/edit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    closeEditPending();
+    await loadPending();
+  } catch(e) { console.error('submitEditPending', e); }
+}
+
+async function dismissPending(id, title) {
+  if (!confirm(`Dismiss "${title}"?`)) return;
+  try {
+    await fetch(`${API}/api/pending/${id}/dismiss`, { method: 'POST' });
+    await loadPending();
+  } catch(e) { console.error('dismissPending', e); }
+}
+
+async function runAgents(btn) {
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = 'Running<span class="pending-spinner"></span>';
+  try {
+    await fetch(`${API}/api/agents/run`, { method: 'POST' });
+    await loadPending();
+  } catch(e) {
+    console.error('runAgents', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
 }
 
 // ---- Helpers ----

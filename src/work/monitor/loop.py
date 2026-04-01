@@ -365,6 +365,16 @@ class MonitorLoop:
         except Exception:
             log.exception("Failed to write analysis log")
 
+        # Run goal agents after analysis
+        try:
+            from work.agent.goal_agent import run_all_goal_agents
+
+            actions_count = await run_all_goal_agents(self.gemini, self.scope_manager)
+            if actions_count > 0:
+                log.info("Goal agents produced work for %d goals", actions_count)
+        except Exception:
+            log.exception("Goal agents failed")
+
         self.last_analysis_time = datetime.now(timezone.utc)
         self.phase = "IDLE"
 

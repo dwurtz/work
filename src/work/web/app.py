@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import re
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,6 +51,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 SIGNAL_LOG = WORK_HOME / "signal_log.jsonl"
 ANALYSIS_LOG = WORK_HOME / "analysis_log.jsonl"
 PROPOSED_GOALS = WORK_HOME / "proposed_goals.json"
+PENDING_PATH = WORK_HOME / "pending_actions.json"
 
 
 def _read_jsonl(path: Path, limit: int | None = None) -> list[dict]:
@@ -176,6 +179,10 @@ class GoalDelete(BaseModel):
 class ScopeCreate(BaseModel):
     type: str
     name: str | None = None
+
+
+class PendingEdit(BaseModel):
+    content: str
 
 
 # ---------------------------------------------------------------------------
@@ -380,6 +387,128 @@ def create_scope(body: ScopeCreate) -> dict:
     scope_manager.create_scope(body.type, body.name)
     label = body.name or body.type
     return {"status": "created", "label": label}
+
+
+# ---------------------------------------------------------------------------
+# Pending Actions (from goal agents)
+# ---------------------------------------------------------------------------
+
+
+def _load_pending() -> list[dict]:
+    if PENDING_PATH.exists():
+        try:
+            return json.loads(PENDING_PATH.read_text())
+        except (json.JSONDecodeError, ValueError):
+            return []
+    return []
+
+
+def _save_pending(actions: list[dict]) -> None:
+    WORK_HOME.mkdir(parents=True, exist_ok=True)
+    PENDING_PATH.write_text(json.dumps(actions, indent=2))
+
+
+@app.get("/api/pending")
+def get_pending() -> list[dict]:
+    return _load_pending()
+
+
+@app.post("/api/pending/{action_id}/approve")
+def approve_pending(action_id: str) -> dict:
+    pending = _load_pending()
+    target = None
+    for action in pending:
+        if action.get("id") == action_id:
+            target = action
+            break
+
+    if target is None:
+        return {"status": "not_found", "id": action_id}
+
+    target["status"] = "approved"
+    target["approved_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Execute the action if applicable
+    action_type = target.get("type", "")
+    if action_type == "draft_email" and target.get("recipient"):
+        try:
+            title = target.get("title", "(no subject)")
+            content = target.get("content", "")
+            recipient = target.get("recipient", "")
+            raw = f"From: david@davidwurtz.com\nTo: {recipient}\nSubject: {title}\n\n{content}"
+            encoded = base64.urlsafe_b64encode(raw.encode()).decode()
+            subprocess.run(
+                [
+                    "gws", "gmail", "users", "messages", "send",
+                    "--params", json.dumps({"userId": "me"}),
+                    "--json", json.dumps({"raw": encoded}),
+                ],
+                capture_output=True,
+                timeout=15,
+            )
+            target["executed"] = True
+        except Exception as e:
+            target["execute_error"] = str(e)
+    elif action_type == "draft_message" and target.get("recipient"):
+        try:
+            phone = target.get("recipient", "")
+            content = target.get("content", "")
+            safe_msg = content[:300].replace('"', '').replace("'", "").replace("\\", "")
+            script = f'''
+            tell application "Messages"
+                set targetService to 1st account whose service type = iMessage
+                set targetBuddy to participant "{phone}" of targetService
+                send "{safe_msg}" to targetBuddy
+            end tell
+            '''
+            subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True,
+                timeout=10,
+            )
+            target["executed"] = True
+        except Exception as e:
+            target["execute_error"] = str(e)
+
+    _save_pending(pending)
+    return {"status": "approved", "id": action_id, "type": action_type}
+
+
+@app.post("/api/pending/{action_id}/dismiss")
+def dismiss_pending(action_id: str) -> dict:
+    pending = _load_pending()
+    remaining = [a for a in pending if a.get("id") != action_id]
+    if len(remaining) == len(pending):
+        return {"status": "not_found", "id": action_id}
+    _save_pending(remaining)
+    return {"status": "dismissed", "id": action_id}
+
+
+@app.post("/api/pending/{action_id}/edit")
+def edit_pending(action_id: str, body: PendingEdit) -> dict:
+    pending = _load_pending()
+    for action in pending:
+        if action.get("id") == action_id:
+            action["content"] = body.content
+            action["edited_at"] = datetime.now(timezone.utc).isoformat()
+            _save_pending(pending)
+            return {"status": "updated", "id": action_id}
+    return {"status": "not_found", "id": action_id}
+
+
+# ---------------------------------------------------------------------------
+# Agent trigger
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/agents/run")
+async def run_agents() -> dict:
+    from work.agent.goal_agent import run_all_goal_agents
+    from work.llm import GeminiClient
+
+    gemini = GeminiClient()
+    actions_count = await run_all_goal_agents(gemini, scope_manager)
+    return {"actions_produced": actions_count}
 
 
 # ---------------------------------------------------------------------------

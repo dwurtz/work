@@ -301,6 +301,84 @@ async def cmd_standup(args: argparse.Namespace) -> None:
     console.print(Panel(Markdown(response), title="[bold]Morning Standup[/bold]", border_style="bright_yellow"))
 
 
+async def cmd_agents(args: argparse.Namespace) -> None:
+    """Run or check status of goal agents."""
+    if args.agents_action == "run":
+        scope_manager, gemini, _ = _init_components()
+        from work.agent.goal_agent import run_all_goal_agents
+
+        with console.status("[dim]Running goal agents...[/dim]"):
+            count = await run_all_goal_agents(gemini, scope_manager)
+
+        if count > 0:
+            console.print(f"[green]Goal agents produced work for {count} goal(s).[/green]")
+            console.print("[dim]Run 'work pending' to see pending actions.[/dim]")
+        else:
+            console.print("[dim]No agent-enabled goals found (add 'agent: enabled' to a goal section).[/dim]")
+
+    elif args.agents_action == "status":
+        pending_path = WORK_HOME / "pending_actions.json"
+        if pending_path.exists():
+            try:
+                pending = json.loads(pending_path.read_text())
+                by_status: dict[str, int] = {}
+                for a in pending:
+                    s = a.get("status", "unknown")
+                    by_status[s] = by_status.get(s, 0) + 1
+                console.print("[bold]Pending actions:[/bold]")
+                for status, count in sorted(by_status.items()):
+                    console.print(f"  {status}: {count}")
+            except (json.JSONDecodeError, ValueError):
+                console.print("[dim]No pending actions.[/dim]")
+        else:
+            console.print("[dim]No pending actions.[/dim]")
+
+
+def cmd_pending(args: argparse.Namespace) -> None:
+    """Show pending actions from goal agents."""
+    pending_path = WORK_HOME / "pending_actions.json"
+    if not pending_path.exists():
+        console.print("[dim]No pending actions. Run 'work agents run' first.[/dim]")
+        return
+
+    try:
+        pending = json.loads(pending_path.read_text())
+    except (json.JSONDecodeError, ValueError):
+        console.print("[dim]No pending actions.[/dim]")
+        return
+
+    # Filter to only pending status
+    active = [a for a in pending if a.get("status") == "pending"]
+    if not active:
+        console.print("[dim]No pending actions (all approved or dismissed).[/dim]")
+        return
+
+    table = Table(title=f"Pending Actions ({len(active)})", show_lines=True)
+    table.add_column("ID", style="dim", width=8)
+    table.add_column("Goal", style="cyan", width=20)
+    table.add_column("Type", width=14)
+    table.add_column("Title", ratio=1)
+    table.add_column("Priority", width=8)
+    table.add_column("Created", style="dim", width=16)
+
+    priority_colors = {"high": "red", "medium": "yellow", "low": "green"}
+
+    for action in active:
+        priority = action.get("priority", "medium")
+        color = priority_colors.get(priority, "white")
+        created = action.get("created_at", "")[:16]
+        table.add_row(
+            action.get("id", "?"),
+            action.get("goal", "?"),
+            action.get("type", "?"),
+            action.get("title", "?"),
+            f"[{color}]{priority}[/{color}]",
+            created,
+        )
+
+    console.print(table)
+
+
 SOURCE_COLORS = {
     "imessage": "cyan",
     "whatsapp": "green",
@@ -471,6 +549,18 @@ def build_parser() -> argparse.ArgumentParser:
     # work status
     sub.add_parser("status", help="Show monitor status and signal counts")
 
+    # work agents [run|status]
+    p_agents = sub.add_parser("agents", help="Run goal agents")
+    p_agents.add_argument(
+        "agents_action",
+        nargs="?",
+        default="run",
+        choices=["run", "status"],
+    )
+
+    # work pending
+    sub.add_parser("pending", help="Show pending actions from goal agents")
+
     # work web
     p_web = sub.add_parser("web", help="Start the web dashboard")
     p_web.add_argument("--port", type=int, default=5050)
@@ -517,6 +607,10 @@ def main() -> None:
             cmd_log(args)
         case "status":
             cmd_status(args)
+        case "agents":
+            _run(cmd_agents(args))
+        case "pending":
+            cmd_pending(args)
         case "web":
             from work.web.server import start
             start(port=args.port)
