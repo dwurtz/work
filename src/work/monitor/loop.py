@@ -416,18 +416,16 @@ class MonitorLoop:
         """Send a macOS notification via osascript through Terminal."""
         import subprocess
 
-        safe_title = title[:100].replace('"', '\\"').replace("'", "\\'")
-        safe_body = body[:200].replace('"', '\\"').replace("'", "\\'")
+        # Strip all quotes and special chars that break osascript
+        safe_title = title[:100].replace('"', '').replace("'", "").replace("\\", "").replace("\n", " ")
+        safe_body = body[:200].replace('"', '').replace("'", "").replace("\\", "").replace("\n", " ")
 
         try:
-            script = (
-                f'tell application "Terminal"\n'
-                f'  display notification "{safe_body}" '
-                f'with title "work" subtitle "{safe_title}" sound name "Glass"\n'
-                f'end tell'
-            )
             subprocess.run(
-                ["osascript", "-e", script],
+                [
+                    "osascript", "-e",
+                    f'display notification "{safe_body}" with title "work" subtitle "{safe_title}" sound name "Glass"',
+                ],
                 capture_output=True, timeout=5,
             )
         except Exception:
