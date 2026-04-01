@@ -10,12 +10,17 @@ Usage:
     python -m work memory           # show memory across scopes
     python -m work standup          # morning briefing
     python -m work status           # monitor status and signal counts
+    python -m work log              # view signal log (last 50)
+    python -m work log --today      # today's signals only
+    python -m work log --source email  # filter by source
+    python -m work log --search "term" # text search
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import signal
 import sys
@@ -25,6 +30,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.table import Table
 from rich.text import Text
 
 from work.config import WORK_HOME
@@ -295,6 +301,98 @@ async def cmd_standup(args: argparse.Namespace) -> None:
     console.print(Panel(Markdown(response), title="[bold]Morning Standup[/bold]", border_style="bright_yellow"))
 
 
+SOURCE_COLORS = {
+    "imessage": "cyan",
+    "whatsapp": "green",
+    "chrome": "yellow",
+    "clipboard": "magenta",
+    "screenshot": "blue",
+    "active_app": "bright_blue",
+    "email": "bright_cyan",
+    "calendar": "bright_green",
+}
+
+
+def cmd_log(args: argparse.Namespace) -> None:
+    """Display signal log as a Rich table."""
+    log_path = WORK_HOME / "signal_log.jsonl"
+    if not log_path.exists():
+        console.print("[dim]No signal log found at ~/.work/signal_log.jsonl[/dim]")
+        return
+
+    # Read all signals
+    signals = []
+    with open(log_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                signals.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    if not signals:
+        console.print("[dim]Signal log is empty.[/dim]")
+        return
+
+    # Filter by --today
+    if args.today:
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        signals = [s for s in signals if s.get("timestamp", "").startswith(today_str)]
+
+    # Filter by --source
+    if args.source:
+        signals = [s for s in signals if s.get("source") == args.source]
+
+    # Filter by --search
+    if args.search:
+        query = args.search.lower()
+        signals = [
+            s for s in signals
+            if query in s.get("text", "").lower()
+            or query in s.get("sender", "").lower()
+            or query in s.get("source", "").lower()
+        ]
+
+    # Take last N
+    n = args.n or 50
+    signals = signals[-n:]
+
+    if not signals:
+        console.print("[dim]No signals match the given filters.[/dim]")
+        return
+
+    # Build table
+    table = Table(title=f"Signal Log ({len(signals)} signals)", show_lines=False)
+    table.add_column("Time", style="dim", width=19)
+    table.add_column("Source", width=12)
+    table.add_column("Sender", width=25)
+    table.add_column("Text", ratio=1)
+
+    for s in signals:
+        ts = s.get("timestamp", "")
+        try:
+            dt = datetime.fromisoformat(ts)
+            time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError):
+            time_str = ts[:19]
+
+        source = s.get("source", "unknown")
+        color = SOURCE_COLORS.get(source, "white")
+        sender = s.get("sender", "")
+        text = s.get("text", "")[:120]
+
+        table.add_row(
+            time_str,
+            f"[{color}]{source}[/{color}]",
+            sender[:25],
+            text,
+        )
+
+    console.print(table)
+
+
 def cmd_status(args: argparse.Namespace) -> None:
     """Show monitor status."""
     from work.context import ScopeManager
@@ -361,6 +459,13 @@ def build_parser() -> argparse.ArgumentParser:
     # work standup
     sub.add_parser("standup", help="Morning standup briefing")
 
+    # work log
+    p_log = sub.add_parser("log", help="View signal log")
+    p_log.add_argument("--today", action="store_true", help="Only show signals from today")
+    p_log.add_argument("--source", type=str, default=None, help="Filter by source type (e.g. imessage, email)")
+    p_log.add_argument("-n", type=int, default=None, help="Number of signals to show (default 50)")
+    p_log.add_argument("--search", type=str, default=None, help="Text search across signal text/sender")
+
     # work status
     sub.add_parser("status", help="Show monitor status and signal counts")
 
@@ -402,6 +507,8 @@ def main() -> None:
             cmd_memory(args)
         case "standup":
             _run(cmd_standup(args))
+        case "log":
+            cmd_log(args)
         case "status":
             cmd_status(args)
         case _:

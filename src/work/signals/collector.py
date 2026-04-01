@@ -10,8 +10,10 @@ from pathlib import Path
 
 from work.config import IGNORED_APPS, SCREENSHOT_APPS, WORK_HOME
 from work.signals.active_app import get_active_app
+from work.signals.calendar import collect_upcoming_events
 from work.signals.chrome import collect_chrome_tabs
 from work.signals.clipboard import collect_clipboard
+from work.signals.email import collect_recent_emails
 from work.signals.imessage import collect_imessages
 from work.signals.screenshot import capture_screenshot_if_changed
 from work.signals.types import Signal
@@ -29,6 +31,9 @@ class SignalCollector:
         self._last_title: str = ""
         self._screenshot_counter: int = 0
         self._screenshot_every: int = 1  # screenshot every collection cycle (~2s)
+        self._email_counter: int = 0
+        self._calendar_counter: int = 0
+        self._gws_every: int = 5  # run email/calendar every 5th cycle (~15s)
         self.recent_history: deque[Signal] = deque(maxlen=history_size)
         self._signal_log_path = WORK_HOME / "signal_log.jsonl"
         self._load_history()
@@ -87,6 +92,24 @@ class SignalCollector:
                 )
         except Exception:
             log.exception("Active app collector error")
+
+        # Email — every 5th cycle
+        self._email_counter += 1
+        if self._email_counter >= self._gws_every:
+            self._email_counter = 0
+            try:
+                raw.extend(collect_recent_emails())
+            except Exception:
+                log.exception("Email collector error")
+
+        # Calendar — every 5th cycle
+        self._calendar_counter += 1
+        if self._calendar_counter >= self._gws_every:
+            self._calendar_counter = 0
+            try:
+                raw.extend(collect_upcoming_events())
+            except Exception:
+                log.exception("Calendar collector error")
 
         # Screenshot — on context change OR every ~10 seconds
         try:
