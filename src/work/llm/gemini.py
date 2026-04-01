@@ -163,10 +163,10 @@ Return ONLY the JSON array."""
         try:
             from PIL import Image
             import io
-            img = Image.open(image_path)
-            if img.width > 1280:
-                ratio = 1280 / img.width
-                img = img.resize((1280, int(img.height * ratio)), Image.LANCZOS)
+            img = Image.open(image_path).convert("RGB")
+            if img.width > 800:
+                ratio = 800 / img.width
+                img = img.resize((800, int(img.height * ratio)), Image.LANCZOS)
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=75)
             image_bytes = buf.getvalue()
