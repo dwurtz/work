@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 
 from work.config import (
     COMPACT_INTERVAL,
     SIGNAL_INTERVAL,
+    WORK_HOME,
 )
 from work.context import ContextStore, ScopeManager
 from work.llm import GeminiClient
@@ -347,6 +349,21 @@ class MonitorLoop:
                 f"New goal? {pg.get('name', '?')}",
                 pg.get("description", ""),
             )
+
+        # Log analysis results
+        analysis_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "matches": matches,
+            "skips": skips[:10],  # truncate skips to save space
+            "new_facts": new_facts,
+            "commitments": commitments,
+            "proposed_goals": proposed_goals,
+        }
+        try:
+            with open(WORK_HOME / "analysis_log.jsonl", "a") as f:
+                f.write(json.dumps(analysis_entry) + "\n")
+        except Exception:
+            log.exception("Failed to write analysis log")
 
         self.last_analysis_time = datetime.now(timezone.utc)
         self.phase = "IDLE"

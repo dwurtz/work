@@ -471,6 +471,10 @@ def build_parser() -> argparse.ArgumentParser:
     # work status
     sub.add_parser("status", help="Show monitor status and signal counts")
 
+    # work web
+    p_web = sub.add_parser("web", help="Start the web dashboard")
+    p_web.add_argument("--port", type=int, default=5050)
+
     return parser
 
 
@@ -513,6 +517,9 @@ def main() -> None:
             cmd_log(args)
         case "status":
             cmd_status(args)
+        case "web":
+            from work.web.server import start
+            start(port=args.port)
         case _:
             parser.print_help()
 

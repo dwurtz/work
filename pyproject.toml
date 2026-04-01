@@ -12,6 +12,8 @@ dependencies = [
     "rich>=13.0",
     "imagehash>=4.3",
     "Pillow>=10.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
 ]
 
 [project.scripts]
