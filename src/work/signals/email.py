@@ -12,6 +12,13 @@ from work.signals.types import Signal
 log = logging.getLogger(__name__)
 
 
+# Subjects/senders to ignore (emails sent by the system itself)
+_SELF_EMAIL_FILTERS = [
+    "[work]",           # all system-sent emails have [work] in subject
+    "david@davidwurtz.com",  # emails from self
+]
+
+
 def collect_recent_emails(since_minutes: int = 15) -> list[Signal]:
     """Collect unread emails from the last N minutes using gws CLI."""
     signals: list[Signal] = []
@@ -82,6 +89,15 @@ def collect_recent_emails(since_minutes: int = 15) -> list[Signal]:
                 text = subject if subject else snippet[:200]
                 if not sender:
                     sender = "Unknown"
+
+                # Skip emails sent by the system itself
+                skip = False
+                for filt in _SELF_EMAIL_FILTERS:
+                    if filt.lower() in subject.lower() or filt.lower() in sender.lower():
+                        skip = True
+                        break
+                if skip:
+                    continue
 
                 signals.append(Signal(
                     source="email",
