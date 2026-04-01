@@ -59,24 +59,45 @@ nav {
 .nav-spacer { flex: 1; }
 .nav-status {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem; color: #3fb950;
+  font-size: 0.75rem; color: #7d8590;
+  display: flex; align-items: center; gap: 8px;
 }
-.nav-status .dot { margin-right: 4px; }
+.nav-status .dot { color: #3fb950; margin-right: 2px; }
+.nav-status .last-analysis {
+  color: #7d8590; font-size: 0.72rem;
+}
 .hamburger {
   display: none; background: none; border: none;
   color: #e6edf3; font-size: 1.4rem; padding: 8px;
   margin-right: 8px;
 }
-@media (max-width: 640px) {
+
+/* ================================================================
+   Mobile Responsive
+   ================================================================ */
+@media (max-width: 768px) {
   .hamburger { display: block; }
   .nav-links {
     display: none; position: absolute; top: 52px; left: 0; right: 0;
     background: #161b22; border-bottom: 1px solid #30363d;
     flex-direction: column; padding: 8px 0;
+    overflow-x: auto;
   }
   .nav-links.open { display: flex; }
   .nav-link { padding: 12px 24px; border-bottom: none; }
   .nav-link.active { background: #1c2128; }
+  #app { padding: 64px 16px 70px !important; }
+  .goal-grid { grid-template-columns: 1fr !important; }
+  .contacts-grid { grid-template-columns: 1fr !important; }
+  .proposed-card-grid { grid-template-columns: 1fr !important; }
+  .stats-bar { flex-direction: column; gap: 12px !important; }
+  .stat { text-align: left; display: flex; gap: 8px; align-items: baseline; }
+  .detail-header { flex-direction: column; align-items: flex-start !important; }
+  .msg { max-width: 90% !important; }
+  .signal-table-wrap { font-size: 0.8rem; }
+  .signal-table td, .signal-table th { padding: 6px 8px !important; }
+  .activity-filters { flex-direction: column; }
+  .activity-filters input { min-width: auto !important; }
 }
 
 /* ================================================================
@@ -84,7 +105,7 @@ nav {
    ================================================================ */
 #app {
   max-width: 1200px; margin: 0 auto;
-  padding: 72px 24px 40px;
+  padding: 72px 24px 70px;
   min-height: 100vh;
 }
 
@@ -93,7 +114,7 @@ nav {
    ================================================================ */
 .card {
   background: #161b22; border: 1px solid #30363d;
-  border-radius: 8px; padding: 20px;
+  border-radius: 8px; padding: 16px;
 }
 
 /* ================================================================
@@ -113,25 +134,53 @@ nav {
 .badge-purple { background: rgba(188,140,255,.15); color: #bc8cff; }
 .badge-gray { background: rgba(125,133,144,.15); color: #7d8590; }
 
+/* Source-specific badges */
+.source-badge {
+  display: inline-block; padding: 2px 10px;
+  border-radius: 12px; font-size: 0.72rem;
+  font-weight: 600; text-transform: lowercase;
+  letter-spacing: 0.3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.source-imessage { background: rgba(0,188,212,.12); color: #00bcd4; }
+.source-whatsapp { background: rgba(37,211,102,.12); color: #25d366; }
+.source-screenshot { background: rgba(88,166,255,.12); color: #58a6ff; }
+.source-email { background: rgba(0,172,193,.12); color: #00acc1; }
+.source-calendar { background: rgba(63,185,80,.12); color: #3fb950; }
+.source-clipboard { background: rgba(188,140,255,.12); color: #bc8cff; }
+.source-active_app { background: rgba(121,192,255,.12); color: #79c0ff; }
+.source-drive { background: rgba(210,168,255,.12); color: #d2a8ff; }
+.source-tasks { background: rgba(230,237,243,.12); color: #e6edf3; }
+.source-default { background: rgba(125,133,144,.12); color: #7d8590; }
+
+/* Confidence badges */
+.conf-high { background: rgba(63,185,80,.15); color: #3fb950; }
+.conf-medium { background: rgba(210,153,34,.15); color: #d29922; }
+.conf-low { background: rgba(125,133,144,.15); color: #7d8590; }
+
 /* ================================================================
    Buttons
    ================================================================ */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 7px 16px; border-radius: 6px;
   font-size: 0.85rem; font-weight: 500;
   border: 1px solid #30363d; background: #21262d;
   color: #e6edf3; transition: all .15s;
+  white-space: nowrap;
 }
 .btn:hover { background: #30363d; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn-primary { background: #238636; border-color: #2ea043; }
+.btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
 .btn-primary:hover { background: #2ea043; }
 .btn-danger { background: #da3633; border-color: #f85149; }
 .btn-danger:hover { background: #f85149; }
 .btn-accent { background: #1f6feb; border-color: #58a6ff; }
 .btn-accent:hover { background: #388bfd; }
 .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+.btn-lg { padding: 10px 24px; font-size: 0.95rem; font-weight: 600; }
+.btn-dismiss { background: #30363d; border-color: #484f58; }
+.btn-dismiss:hover { background: #484f58; }
 
 /* ================================================================
    Modals
@@ -171,7 +220,7 @@ nav {
 /* ================================================================
    Sections
    ================================================================ */
-.section { margin-bottom: 32px; }
+.section { margin-bottom: 24px; }
 .section-title {
   font-size: 0.85rem; font-weight: 600;
   text-transform: uppercase; letter-spacing: 1px;
@@ -188,27 +237,59 @@ nav {
    ================================================================ */
 .greeting {
   font-size: 1.8rem; font-weight: 700;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 .greeting .sub {
   display: block; font-size: 0.95rem;
   font-weight: 400; color: #7d8590; margin-top: 4px;
 }
+
+/* Proposed goal cards - prominent */
+.proposed-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
 .proposed-card {
-  border-left: 3px solid #d29922;
-  margin-bottom: 12px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-left: 4px solid #d29922;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex; flex-direction: column;
 }
 .proposed-card .proposed-name {
-  font-weight: 600; font-size: 1rem;
+  font-weight: 700; font-size: 1.2rem;
+  margin-bottom: 8px;
+  color: #e6edf3;
 }
 .proposed-card .proposed-desc {
-  color: #7d8590; font-size: 0.9rem; margin: 6px 0 12px;
+  color: #c9d1d9; font-size: 0.92rem;
+  margin-bottom: 12px; line-height: 1.6;
+  flex: 1;
 }
 .proposed-card .proposed-evidence {
   font-size: 0.82rem; color: #7d8590;
-  font-style: italic; margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: #0d1117;
+  border-radius: 6px;
+  border-left: 2px solid #d29922;
 }
-.proposed-actions { display: flex; gap: 8px; }
+.proposed-evidence-title {
+  font-weight: 600; color: #d29922;
+  font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.proposed-evidence-item {
+  padding: 3px 0; color: #c9d1d9;
+  word-wrap: break-word;
+}
+.proposed-actions {
+  display: flex; gap: 10px; margin-top: auto;
+}
+
 .highlight-item {
   padding: 12px 0;
   border-bottom: 1px solid #21262d;
@@ -220,10 +301,11 @@ nav {
 .highlight-signal {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.82rem; color: #e6edf3;
-  background: #0d1117; padding: 6px 10px;
+  background: #0d1117; padding: 8px 12px;
   border-radius: 4px; margin: 6px 0;
   border-left: 2px solid #30363d;
-  white-space: pre-wrap; word-break: break-word;
+  white-space: pre-wrap; word-wrap: break-word;
+  word-break: break-word;
 }
 .highlight-reasoning {
   font-size: 0.82rem; color: #7d8590; font-style: italic;
@@ -250,7 +332,7 @@ nav {
   margin-bottom: 24px;
 }
 .page-header h1 { font-size: 1.6rem; font-weight: 700; }
-.scope-section { margin-bottom: 28px; }
+.scope-section { margin-bottom: 24px; }
 .scope-label {
   font-size: 0.9rem; font-weight: 600;
   color: #7d8590; margin-bottom: 12px;
@@ -261,11 +343,9 @@ nav {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 12px;
 }
-@media (max-width: 640px) {
-  .goal-grid { grid-template-columns: 1fr; }
-}
 .goal-card {
   cursor: pointer; transition: border-color .15s, transform .1s;
+  padding: 16px;
 }
 .goal-card:hover { border-color: #58a6ff; transform: translateY(-1px); }
 .goal-icon { font-size: 2rem; margin-bottom: 8px; }
@@ -322,15 +402,18 @@ nav {
   font-size: 0.78rem; color: #7d8590;
 }
 .timeline-signal {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem; background: #0d1117;
-  padding: 8px 12px; border-radius: 4px;
+  font-size: 0.88rem;
+  background: #0d1117;
+  padding: 10px 14px; border-radius: 6px;
   margin: 8px 0; white-space: pre-wrap;
-  word-break: break-word; line-height: 1.5;
+  word-wrap: break-word; word-break: break-word;
+  line-height: 1.6; color: #e6edf3;
 }
 .timeline-reasoning {
   font-size: 0.82rem; color: #7d8590;
-  font-style: italic; margin-top: 4px;
+  font-style: italic; margin-top: 6px;
+  padding-left: 12px;
+  border-left: 2px solid #30363d;
 }
 .timeline-action {
   font-size: 0.82rem; color: #d29922; margin-top: 4px;
@@ -374,7 +457,7 @@ nav {
    ================================================================ */
 .chat-container {
   display: flex; flex-direction: column;
-  height: calc(100vh - 92px);
+  height: calc(100vh - 130px);
 }
 .chat-messages {
   flex: 1; overflow-y: auto; padding: 16px 0;
@@ -425,6 +508,10 @@ nav {
   margin: 10px 0 6px; font-size: 1rem;
 }
 .msg-content strong { color: #fff; }
+.msg-content blockquote {
+  border-left: 3px solid #30363d; padding-left: 12px;
+  color: #7d8590; margin: 8px 0;
+}
 .chat-input-bar {
   display: flex; gap: 8px; align-items: flex-end;
   padding: 12px 0;
@@ -467,26 +554,37 @@ nav {
 .activity-filters select:focus, .activity-filters input:focus {
   outline: none; border-color: #58a6ff;
 }
-.signal-table { width: 100%; border-collapse: collapse; }
+.signal-table-wrap {
+  overflow-x: auto; padding: 0;
+}
+.signal-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .signal-table th {
-  text-align: left; padding: 8px 12px;
+  text-align: left; padding: 10px 12px;
   font-size: 0.75rem; color: #7d8590;
   text-transform: uppercase; letter-spacing: 0.5px;
   border-bottom: 1px solid #30363d;
   font-family: 'JetBrains Mono', monospace;
 }
 .signal-table td {
-  padding: 8px 12px; border-bottom: 1px solid #21262d;
+  padding: 10px 12px; border-bottom: 1px solid #21262d;
   font-size: 0.85rem; vertical-align: top;
 }
-.signal-table tr:hover { background: #1c2128; }
-.signal-text { max-width: 600px; }
-.signal-row.expandable { cursor: pointer; }
-.signal-row .signal-full { display: none; }
-.signal-row.expanded .signal-short { display: none; }
-.signal-row.expanded .signal-full { display: block; white-space: pre-wrap; word-break: break-word; line-height: 1.5; padding: 4px 0; }
-.signal-row.expanded td { white-space: normal; }
-.signal-row.expanded { background: #1c2128; }
+/* Column widths */
+.signal-table .col-time { width: 140px; }
+.signal-table .col-source { width: 100px; }
+.signal-table .col-sender { width: 180px; }
+.signal-table .col-signal { /* flex: takes remaining space */ }
+/* Alternating row backgrounds */
+.signal-table tbody tr:nth-child(even) { background: #161b22; }
+.signal-table tbody tr:nth-child(odd) { background: #0d1117; }
+.signal-table tbody tr:hover { background: #1c2128; }
+/* Signal text wrapping */
+.signal-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.5;
+}
 .analysis-entry {
   padding: 12px 16px; margin-bottom: 6px;
   cursor: pointer;
@@ -508,6 +606,10 @@ nav {
 .empty-state {
   text-align: center; padding: 40px 20px;
   color: #7d8590; font-size: 0.9rem;
+  line-height: 1.7;
+}
+.empty-state .empty-hint {
+  margin-top: 8px; font-size: 0.82rem; color: #484f58;
 }
 .spinner {
   display: inline-block; width: 14px; height: 14px;
@@ -515,13 +617,6 @@ nav {
   border-radius: 50%; animation: spin .6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.source-badge { font-size: 0.72rem; }
-.source-screenshot { background: rgba(248,81,73,.12); color: #f85149; }
-.source-email { background: rgba(88,166,255,.12); color: #58a6ff; }
-.source-calendar { background: rgba(63,185,80,.12); color: #3fb950; }
-.source-imessage { background: rgba(188,140,255,.12); color: #bc8cff; }
-.source-slack { background: rgba(210,153,34,.12); color: #d29922; }
-.source-default { background: rgba(125,133,144,.12); color: #7d8590; }
 .hidden { display: none !important; }
 .mt-8 { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
@@ -579,9 +674,6 @@ nav {
 body.on-chat-page #chat-bar,
 body.on-chat-page #chat-panel { display: none; }
 
-/* Add bottom padding so chat bar doesn't overlap content */
-#app { padding-bottom: 70px; }
-
 /* ================================================================
    Contact Cards
    ================================================================ */
@@ -630,9 +722,15 @@ body.on-chat-page #chat-panel { display: none; }
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 12px;
 }
-@media (max-width: 640px) {
-  .contacts-grid { grid-template-columns: 1fr; }
+
+/* ================================================================
+   Collapsible toggle
+   ================================================================ */
+.collapsible-toggle {
+  background: none; border: none; color: #58a6ff;
+  font-size: 0.82rem; cursor: pointer; padding: 4px 0;
 }
+.collapsible-toggle:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -649,7 +747,10 @@ body.on-chat-page #chat-panel { display: none; }
     <a href="#activity" class="nav-link" data-page="activity">Activity</a>
   </div>
   <span class="nav-spacer"></span>
-  <span class="nav-status"><span class="dot">&#9679;</span> monitoring</span>
+  <span class="nav-status">
+    <span><span class="dot">&#9679;</span> monitoring</span>
+    <span class="last-analysis" id="lastAnalysisIndicator"></span>
+  </span>
 </nav>
 
 <!-- App container -->
@@ -806,6 +907,8 @@ const state = {
   chatSending: false,
   chatPanelOpen: false,
   editingPendingId: null,
+  // Data hashes for smart polling (only re-render if data changed)
+  _hashes: {},
 };
 
 const appEl = document.getElementById('app');
@@ -817,7 +920,6 @@ function navigate(hash) {
   const raw = (hash || '#home').replace('#', '');
   state.currentPage = raw;
   updateNavLinks(raw);
-  // Toggle chat bar visibility based on page
   if (raw === 'chat') {
     document.body.classList.add('on-chat-page');
   } else {
@@ -851,6 +953,7 @@ function renderCurrentPage() {
   else if (page === 'chat') renderChat();
   else if (page === 'activity') renderActivity();
   else renderHome();
+  updateLastAnalysis();
 }
 
 /* ================================================================
@@ -883,6 +986,15 @@ function fmtTime(ts) {
   });
 }
 
+function fmtTimeFull(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  return d.toLocaleString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
 function greeting() {
   var h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -901,13 +1013,24 @@ function scopeKey(scope, scopeName) {
 
 function sourceBadgeClass(source) {
   var map = {
+    imessage: 'source-imessage',
+    whatsapp: 'source-whatsapp',
     screenshot: 'source-screenshot',
     email: 'source-email',
     calendar: 'source-calendar',
-    imessage: 'source-imessage',
-    slack: 'source-slack',
+    clipboard: 'source-clipboard',
+    active_app: 'source-active_app',
+    drive: 'source-drive',
+    tasks: 'source-tasks',
   };
-  return 'badge source-badge ' + (map[source] || 'source-default');
+  return 'source-badge ' + (map[source] || 'source-default');
+}
+
+function confBadgeClass(conf) {
+  var upper = (conf || '').toUpperCase();
+  if (upper === 'HIGH') return 'badge conf-high';
+  if (upper === 'MEDIUM') return 'badge conf-medium';
+  return 'badge conf-low';
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -917,25 +1040,69 @@ function closeMobileNav() { document.getElementById('navLinks').classList.remove
 
 function renderMarkdown(text) {
   if (!text) return '';
-  var html = text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  var html = text;
+
+  // Code blocks (fenced)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(m, lang, code) {
+    return '<pre><code>' + esc(code) + '</code></pre>';
+  });
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, function(m, code) {
+    return '<code>' + esc(code) + '</code>';
+  });
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Unordered lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Wrap consecutive li elements
   html = html.replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
+
+  // Paragraphs
   html = html.split('\n\n').map(function(p) {
     p = p.trim();
     if (!p) return '';
-    if (p.startsWith('<h') || p.startsWith('<pre') || p.startsWith('<ul') || p.startsWith('<ol'))
+    if (p.startsWith('<h') || p.startsWith('<pre') || p.startsWith('<ul') || p.startsWith('<ol') || p.startsWith('<blockquote'))
       return p;
     return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
   }).join('');
+
   return html;
+}
+
+function simpleHash(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
+function updateLastAnalysis() {
+  var el = document.getElementById('lastAnalysisIndicator');
+  if (!el) return;
+  if (state.analysis.length > 0) {
+    var last = state.analysis[state.analysis.length - 1];
+    var ts = last.timestamp || last.ts;
+    if (ts) {
+      el.textContent = 'Last analysis: ' + timeAgo(ts);
+    }
+  }
 }
 
 /* ================================================================
@@ -1008,6 +1175,39 @@ async function loadAll() {
   renderCurrentPage();
 }
 
+/* Smart polling: only re-render if data actually changed */
+async function pollGoals() {
+  var before = JSON.stringify(state.goals);
+  await loadGoals();
+  if (JSON.stringify(state.goals) !== before && (state.currentPage === 'goals' || state.currentPage === 'home')) {
+    renderCurrentPage();
+  }
+}
+async function pollProposed() {
+  var before = JSON.stringify(state.proposed);
+  await loadProposed();
+  if (JSON.stringify(state.proposed) !== before && (state.currentPage === 'home' || state.currentPage === 'goals')) {
+    renderCurrentPage();
+  }
+}
+async function pollPending() {
+  var before = JSON.stringify(state.pending);
+  await loadPending();
+  if (JSON.stringify(state.pending) !== before) {
+    if (state.currentPage === 'home' || state.currentPage.startsWith('goal/')) {
+      renderCurrentPage();
+    }
+  }
+}
+async function pollAnalysis() {
+  var before = state.analysis.length;
+  await loadAnalysis();
+  updateLastAnalysis();
+  if (state.analysis.length !== before && (state.currentPage === 'home' || state.currentPage === 'activity')) {
+    renderCurrentPage();
+  }
+}
+
 /* ================================================================
    WebSocket
    ================================================================ */
@@ -1037,25 +1237,43 @@ function renderHome() {
   var todaySignals = state.signals.filter(function(s) { return new Date(s.timestamp) >= todayStart; }).length;
   var lastAnalysis = state.analysis.length > 0 ? state.analysis[state.analysis.length - 1] : null;
 
+  // Collect key people from all goals for empty state messages
+  var allKeyPeople = [];
+  state.goals.forEach(function(g) {
+    if (g.key_people) {
+      g.key_people.forEach(function(p) {
+        if (allKeyPeople.indexOf(p) === -1) allKeyPeople.push(p);
+      });
+    }
+  });
+
   var html = '<div class="greeting">' + greeting() + ', David.' +
     '<span class="sub">Here\'s what\'s happening.</span></div>';
 
-  // Proposed Goals
+  // Proposed Goals - prominent cards
   if (state.proposed.length > 0) {
     html += '<div class="section">' +
-      '<div class="section-title">Proposed Goals <span class="count">' + state.proposed.length + '</span></div>';
+      '<div class="section-title">Proposed Goals <span class="count">' + state.proposed.length + '</span></div>' +
+      '<div class="proposed-card-grid">';
     state.proposed.forEach(function(pg) {
-      var evidence = (pg.evidence || []).join('; ');
-      html += '<div class="card proposed-card mb-8">' +
+      var evidence = pg.evidence || [];
+      html += '<div class="proposed-card">' +
         '<div class="proposed-name">' + esc(pg.name || 'Untitled') + '</div>' +
-        '<div class="proposed-desc">' + esc(pg.description || '') + '</div>' +
-        (evidence ? '<div class="proposed-evidence">Evidence: ' + esc(evidence) + '</div>' : '') +
-        '<div class="proposed-actions">' +
-        '<button class="btn btn-primary btn-sm" onclick="acceptProposed(\'' + esc(pg.id) + '\', this)">Accept as Goal</button>' +
-        '<button class="btn btn-sm" onclick="dismissProposed(\'' + esc(pg.id) + '\', this)">Dismiss</button>' +
+        '<div class="proposed-desc">' + esc(pg.description || '') + '</div>';
+      if (evidence.length > 0) {
+        html += '<div class="proposed-evidence">' +
+          '<div class="proposed-evidence-title">Signals that triggered this</div>';
+        evidence.forEach(function(ev) {
+          html += '<div class="proposed-evidence-item">' + esc(ev) + '</div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="proposed-actions">' +
+        '<button class="btn btn-primary btn-lg" onclick="acceptProposed(\'' + esc(pg.id) + '\', this)">Accept</button>' +
+        '<button class="btn btn-dismiss btn-lg" onclick="dismissProposed(\'' + esc(pg.id) + '\', this)">Dismiss</button>' +
         '</div></div>';
     });
-    html += '</div>';
+    html += '</div></div>';
   }
 
   // Recent Highlights
@@ -1121,7 +1339,7 @@ function renderHome() {
         '<div style="flex:1;">' +
         (goalName ? '<span style="font-weight:600;">' + esc(goalName) + '</span> &mdash; ' : '') +
         '<span>' + esc(a.title || 'Untitled') + '</span>' +
-        '<div style="font-size:0.82rem;color:#7d8590;margin-top:2px;">' + esc((a.description || '').slice(0, 120)) + '</div>' +
+        '<div style="font-size:0.82rem;color:#7d8590;margin-top:2px;">' + esc(a.description || '') + '</div>' +
         '</div>' +
         (sk && gn ? '<button class="btn btn-sm" onclick="location.hash=\'#goal/' + sk + '/' + gn + '\'">Review</button>' : '') +
         '</div>';
@@ -1142,7 +1360,7 @@ function renderHome() {
 
 async function acceptProposed(id, btn) {
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
+  btn.innerHTML = '<span class="spinner"></span> Accepting...';
   try {
     await api('/api/proposed/' + id + '/accept', { method: 'POST' });
     await Promise.all([loadProposed(), loadGoals()]);
@@ -1150,7 +1368,7 @@ async function acceptProposed(id, btn) {
   } catch(e) {
     alert('Failed: ' + e.message);
     btn.disabled = false;
-    btn.textContent = 'Accept as Goal';
+    btn.textContent = 'Accept';
   }
 }
 
@@ -1231,17 +1449,27 @@ function renderGoals() {
   // Proposed goals
   if (state.proposed.length > 0) {
     html += '<div class="section mt-16">' +
-      '<div class="section-title">Proposed Goals <span class="count">' + state.proposed.length + '</span></div>';
+      '<div class="section-title">Proposed Goals <span class="count">' + state.proposed.length + '</span></div>' +
+      '<div class="proposed-card-grid">';
     state.proposed.forEach(function(pg) {
-      html += '<div class="card proposed-card mb-8">' +
+      var evidence = pg.evidence || [];
+      html += '<div class="proposed-card">' +
         '<div class="proposed-name">' + esc(pg.name || 'Untitled') + '</div>' +
-        '<div class="proposed-desc">' + esc(pg.description || '') + '</div>' +
-        '<div class="proposed-actions">' +
-        '<button class="btn btn-primary btn-sm" onclick="acceptProposed(\'' + esc(pg.id) + '\', this)">Accept</button>' +
-        '<button class="btn btn-sm" onclick="dismissProposed(\'' + esc(pg.id) + '\', this)">Dismiss</button>' +
+        '<div class="proposed-desc">' + esc(pg.description || '') + '</div>';
+      if (evidence.length > 0) {
+        html += '<div class="proposed-evidence">' +
+          '<div class="proposed-evidence-title">Triggering signals</div>';
+        evidence.forEach(function(ev) {
+          html += '<div class="proposed-evidence-item">' + esc(ev) + '</div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="proposed-actions">' +
+        '<button class="btn btn-primary btn-lg" onclick="acceptProposed(\'' + esc(pg.id) + '\', this)">Accept</button>' +
+        '<button class="btn btn-dismiss btn-lg" onclick="dismissProposed(\'' + esc(pg.id) + '\', this)">Dismiss</button>' +
         '</div></div>';
     });
-    html += '</div>';
+    html += '</div></div>';
   }
 
   appEl.innerHTML = html;
@@ -1277,7 +1505,7 @@ async function createGoal() {
         .split(',').map(function(s) { return s.trim(); }).filter(Boolean),
       icon: document.getElementById('goalIcon').value.trim(),
     };
-    if (!body.name) { alert('Name is required'); return; }
+    if (!body.name) { alert('Name is required'); btn.disabled = false; btn.textContent = 'Create'; return; }
     await api('/api/goals', { method: 'POST', body: JSON.stringify(body) });
     closeModal('addGoalModal');
     await loadGoals();
@@ -1305,6 +1533,9 @@ function renderGoalDetail(scopeStr, name) {
     appEl.innerHTML = html;
     return;
   }
+
+  // Collect key people for empty state
+  var keyPeopleNames = (goal.key_people || []).join(', ');
 
   // Header
   html += '<div class="detail-header">' +
@@ -1362,7 +1593,10 @@ function renderGoalDetail(scopeStr, name) {
     '<div class="section-title">Signal Timeline <span class="count">' + allMatches.length + '</span></div>';
 
   if (allMatches.length === 0) {
-    html += '<div class="empty-state">No signals matched this goal yet.</div>';
+    html += '<div class="empty-state">' +
+      'No signals matched yet. The monitor checks every 5 minutes.' +
+      (keyPeopleNames ? '<div class="empty-hint">Signals from ' + esc(keyPeopleNames) + ' will match automatically.</div>' : '') +
+      '</div>';
   } else {
     allMatches.forEach(function(m) {
       var ts = m.signal_timestamp || m.analysis_ts || '';
@@ -1371,15 +1605,14 @@ function renderGoalDetail(scopeStr, name) {
       var signalText = m.signal_text || m.signal_summary || m.signal || '';
       var reasoning = m.reasoning || m.explanation || '';
       var action = m.suggested_action || m.action || '';
-      var confUpper = conf.toUpperCase();
-      var confClass = confUpper === 'HIGH' ? 'badge-green' : confUpper === 'MEDIUM' ? 'badge-yellow' : 'badge-gray';
+      var confUpper = (conf || '').toUpperCase();
       var borderColor = confUpper === 'HIGH' ? '#3fb950' : confUpper === 'MEDIUM' ? '#d29922' : '#30363d';
 
       html += '<div class="timeline-item" style="border-left-color:' + borderColor + ';">' +
         '<div class="timeline-meta">' +
-        '<span class="timeline-time">' + fmtTime(ts) + '</span>' +
-        (conf ? ' <span class="badge ' + confClass + '">' + esc(conf) + '</span>' : '') +
+        '<span class="timeline-time">' + fmtTimeFull(ts) + '</span>' +
         (source ? ' <span class="' + sourceBadgeClass(source) + '">' + esc(source) + '</span>' : '') +
+        (conf ? ' <span class="' + confBadgeClass(conf) + '">' + esc(confUpper) + '</span>' : '') +
         '</div>' +
         (signalText ? '<div class="timeline-signal">' + esc(signalText) + '</div>' : '') +
         (reasoning ? '<div class="timeline-reasoning">' + esc(reasoning) + '</div>' : '') +
@@ -1584,7 +1817,7 @@ function renderChatMessages() {
     var isUser = msg.role === 'user';
     var isProactive = msg.proactive;
     var cls = isUser ? 'msg msg-user' : (isProactive ? 'msg msg-proactive' : 'msg msg-agent');
-    var content = isUser ? esc(msg.content) : renderMarkdown(msg.content || '');
+    var content = isUser ? '<p>' + esc(msg.content) + '</p>' : renderMarkdown(msg.content || '');
     var prefix = isProactive ? '<span style="color:#d29922;">&#128276;</span> ' : '';
 
     html += '<div class="' + cls + '">' +
@@ -1674,13 +1907,13 @@ function renderActivity() {
     '<input type="text" id="searchFilter" placeholder="Search signals..." onkeyup="debounceFilter()">' +
     '</div>';
 
-  // Signal table
+  // Signal table - full text, no truncation
   html += '<div class="section">' +
     '<div class="section-title">Live Signal Feed <span class="count">' + state.signals.length + '</span></div>' +
-    '<div class="card" style="overflow-x:auto;padding:0;">' +
+    '<div class="card signal-table-wrap">' +
     '<table class="signal-table">' +
     '<thead><tr>' +
-    '<th>Time</th><th>Source</th><th>Sender</th><th>Signal</th>' +
+    '<th class="col-time">Time</th><th class="col-source">Source</th><th class="col-sender">Sender</th><th class="col-signal">Signal</th>' +
     '</tr></thead>' +
     '<tbody id="signalTableBody">';
 
@@ -1737,18 +1970,14 @@ function renderActivity() {
   appEl.innerHTML = html;
 }
 
+/* Signal row: always show full text, no expand/collapse needed */
 function signalRowHtml(s) {
-  var full = esc(s.text || '');
-  var short = full.length > 120 ? full.slice(0, 120) + '...' : full;
-  var needsExpand = full.length > 120;
-  return '<tr class="signal-row' + (needsExpand ? ' expandable' : '') + '" onclick="this.classList.toggle(\'expanded\')">' +
-    '<td><span class="timeline-time">' + fmtTime(s.timestamp) + '</span></td>' +
-    '<td><span class="' + sourceBadgeClass(s.source) + '">' + esc(s.source || '') + '</span></td>' +
-    '<td>' + esc(s.sender || '') + '</td>' +
-    '<td class="signal-text">' +
-      '<span class="signal-short">' + short + '</span>' +
-      (needsExpand ? '<span class="signal-full">' + full + '</span>' : '') +
-    '</td>' +
+  var text = esc(s.text || '');
+  return '<tr>' +
+    '<td class="col-time"><span class="timeline-time">' + fmtTime(s.timestamp) + '</span></td>' +
+    '<td class="col-source"><span class="' + sourceBadgeClass(s.source) + '">' + esc(s.source || '') + '</span></td>' +
+    '<td class="col-sender">' + esc(s.sender || '') + '</td>' +
+    '<td class="signal-text">' + text + '</td>' +
     '</tr>';
 }
 
@@ -1756,22 +1985,18 @@ function appendSignalRow(signal) {
   var tbody = document.getElementById('signalTableBody');
   if (!tbody) return;
   var tr = document.createElement('tr');
-  var full = esc(signal.text || '');
-  var short = full.length > 120 ? full.slice(0, 120) + '...' : full;
-  var needsExpand = full.length > 120;
-  tr.className = 'signal-row' + (needsExpand ? ' expandable' : '');
-  tr.onclick = function() { this.classList.toggle('expanded'); };
+  var text = esc(signal.text || '');
   tr.innerHTML =
-    '<td><span class="timeline-time">' + fmtTime(signal.timestamp) + '</span></td>' +
-    '<td><span class="' + sourceBadgeClass(signal.source) + '">' + esc(signal.source || '') + '</span></td>' +
-    '<td>' + esc(signal.sender || '') + '</td>' +
-    '<td class="signal-text">' +
-      '<span class="signal-short">' + short + '</span>' +
-      (needsExpand ? '<span class="signal-full">' + full + '</span>' : '') +
-    '</td>';
+    '<td class="col-time"><span class="timeline-time">' + fmtTime(signal.timestamp) + '</span></td>' +
+    '<td class="col-source"><span class="' + sourceBadgeClass(signal.source) + '">' + esc(signal.source || '') + '</span></td>' +
+    '<td class="col-sender">' + esc(signal.sender || '') + '</td>' +
+    '<td class="signal-text">' + text + '</td>';
   tbody.insertBefore(tr, tbody.firstChild);
   // Trim table
   while (tbody.children.length > 150) tbody.removeChild(tbody.lastChild);
+  // Update count
+  var countEl = document.querySelector('.section-title .count');
+  if (countEl) countEl.textContent = state.signals.length;
 }
 
 var filterTimer = null;
@@ -1825,7 +2050,7 @@ async function saveGoalEdit() {
       .split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
     var icon = document.getElementById('editGoalIcon').value.trim();
 
-    if (!newName) { alert('Name is required'); return; }
+    if (!newName) { alert('Name is required'); btn.disabled = false; btn.textContent = 'Save'; return; }
 
     // If name changed, delete old goal first
     if (origName !== newName) {
@@ -1887,10 +2112,8 @@ function findContactByName(personStr) {
   return state.contacts.find(function(c) {
     if (c.name && c.name.toLowerCase() === lower) return true;
     if (c.nickname && c.nickname.toLowerCase() === lower) return true;
-    // Check if the person string contains the contact name
     if (c.name && lower.indexOf(c.name.toLowerCase()) !== -1) return true;
     if (c.nickname && lower.indexOf(c.nickname.toLowerCase()) !== -1) return true;
-    // Check partial first name match
     var firstName = (c.name || '').split(' ')[0].toLowerCase();
     if (firstName && firstName === lower) return true;
     return false;
@@ -1932,7 +2155,7 @@ function renderContacts() {
     '</div>';
 
   if (state.contacts.length === 0) {
-    html += '<div class="empty-state">No contacts yet.</div>';
+    html += '<div class="empty-state">No contacts yet. Add contacts to track key people across your goals.</div>';
   } else {
     html += '<div class="contacts-grid">';
     state.contacts.forEach(function(c) {
@@ -1989,7 +2212,7 @@ async function saveContact() {
   try {
     var id = document.getElementById('contactId').value;
     var name = document.getElementById('contactName').value.trim();
-    if (!name) { alert('Name is required'); return; }
+    if (!name) { alert('Name is required'); btn.disabled = false; btn.textContent = 'Save'; return; }
     var body = {
       name: name,
       nickname: document.getElementById('contactNickname').value.trim() || null,
@@ -2000,7 +2223,6 @@ async function saveContact() {
         .split(',').map(function(s) { return s.trim(); }).filter(Boolean),
     };
     if (id) body.id = id;
-    // Build channels from phone/email
     var channels = {};
     if (body.phone) channels.imessage = body.phone;
     if (body.email) channels.email = body.email;
@@ -2058,7 +2280,7 @@ function renderChatPanelMessages() {
     var isUser = msg.role === 'user';
     var isProactive = msg.proactive;
     var cls = isUser ? 'msg msg-user' : (isProactive ? 'msg msg-proactive' : 'msg msg-agent');
-    var content = isUser ? esc(msg.content) : renderMarkdown(msg.content || '');
+    var content = isUser ? '<p>' + esc(msg.content) + '</p>' : renderMarkdown(msg.content || '');
     var prefix = isProactive ? '<span style="color:#d29922;">&#128276;</span> ' : '';
     html += '<div class="' + cls + '">' +
       '<div class="msg-content">' + prefix + content + '</div>' +
@@ -2074,6 +2296,7 @@ function renderChatPanelMessages() {
 
 async function sendBarChat() {
   var input = document.getElementById('chat-bar-input');
+  if (!input) return;
   var msg = input.value.trim();
   if (!msg || state.chatSending) return;
 
@@ -2091,7 +2314,6 @@ async function sendBarChat() {
   });
   state.conversationKnownLen = state.conversation.length;
   renderChatPanelMessages();
-  // Also update full chat page if visible
   if (state.currentPage === 'chat') renderChatMessages();
 
   try {
@@ -2141,19 +2363,19 @@ document.addEventListener('click', function(e) {
   if (!state.chatPanelOpen) return;
   var panel = document.getElementById('chat-panel');
   var bar = document.getElementById('chat-bar');
-  if (!panel.contains(e.target) && !bar.contains(e.target)) {
+  if (panel && bar && !panel.contains(e.target) && !bar.contains(e.target)) {
     closeChatPanel();
   }
 });
 
 /* ================================================================
-   Polling
+   Polling - smart: only re-render when data changes and page is relevant
    ================================================================ */
 setInterval(loadConversation, 5000);
-setInterval(loadProposed, 15000);
-setInterval(loadPending, 15000);
-setInterval(loadGoals, 30000);
-setInterval(loadAnalysis, 60000);
+setInterval(pollProposed, 15000);
+setInterval(pollPending, 15000);
+setInterval(pollGoals, 30000);
+setInterval(pollAnalysis, 60000);
 
 /* ================================================================
    Init
