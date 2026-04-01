@@ -26,7 +26,7 @@ class SignalCollector:
         self._last_app: str = ""
         self._last_title: str = ""
         self._screenshot_counter: int = 0
-        self._screenshot_every: int = 5  # screenshot every N collection cycles (~10s at 2s interval)
+        self._screenshot_every: int = 1  # screenshot every collection cycle (~2s)
         self.recent_history: deque[Signal] = deque(maxlen=history_size)
 
     def collect_all(self) -> list[Signal]:

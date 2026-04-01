@@ -12,7 +12,7 @@ WORK_HOME = Path(os.environ.get("WORK_HOME", Path.home() / ".work"))
 SCOPES = ("personal", "projects", "org")
 
 # Monitor timing
-SIGNAL_INTERVAL = 2        # collect signals every N seconds
+SIGNAL_INTERVAL = 3        # collect signals every N seconds
 MATCH_INTERVAL = 15         # run Gemini matching every N seconds
 SCREENSHOT_INTERVAL = 3     # screenshot on context change check
 COMPACT_INTERVAL = 3600     # compact hot buffer every hour
