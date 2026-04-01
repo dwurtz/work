@@ -171,6 +171,7 @@ class GoalCreate(BaseModel):
     description: str
     key_people: list[str] = []
     icon: str = ""
+    status: str = "Active"
 
 
 class GoalDelete(BaseModel):
@@ -307,10 +308,14 @@ def get_goals() -> list[dict]:
 @app.post("/api/goals")
 def create_goal(body: GoalCreate) -> dict:
     store = scope_manager.get_store(body.scope, body.scope_name)
-    # Prepend icon to description if provided
+    # Prepend icon and status to description if provided
     desc = body.description
+    status = body.status or "Active"
     if body.icon:
-        desc = f"{body.icon} | Active\n\n{desc}"
+        desc = f"{body.icon} | {status}\n\n{desc}"
+    elif status != "Active":
+        # No icon but non-default status — still store status line
+        desc = f"| {status}\n\n{desc}"
     action = store.set_goal(body.name, desc, body.key_people or None)
     return {"status": action, "name": body.name}
 
@@ -411,7 +416,13 @@ def _accept_proposed(goal_id: str) -> dict:
     if target is None:
         return {"status": "not_found", "id": goal_id}
 
-    store = scope_manager.get_store("personal")
+    scope = target.get("scope", "personal")
+    scope_name = target.get("scope_name", None)
+    if "/" in scope:
+        parts = scope.split("/", 1)
+        scope = parts[0]
+        scope_name = parts[1]
+    store = scope_manager.get_store(scope, scope_name)
     store.set_goal(
         target.get("name", "New Goal"),
         target.get("description", ""),
@@ -808,12 +819,15 @@ async def clear_chat():
 
 
 class SignalWatcher:
-    """Watches signal_log.jsonl for new lines and broadcasts to connected clients."""
+    """Watches signal_log.jsonl, analysis_log.jsonl, and proposed_goals.json
+    for changes and broadcasts to connected clients."""
 
     def __init__(self) -> None:
         self.clients: list[WebSocket] = []
         self._task: asyncio.Task | None = None
-        self._last_size: int = 0
+        self._last_signal_size: int = 0
+        self._last_analysis_size: int = 0
+        self._last_proposed_hash: str = ""
 
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
@@ -826,30 +840,64 @@ class SignalWatcher:
             self.clients.remove(ws)
 
     async def _poll(self) -> None:
-        """Poll signal_log.jsonl for growth every 1s."""
+        """Poll log files for growth every 1s."""
         while self.clients:
             try:
+                # Signal log
                 if SIGNAL_LOG.exists():
                     current_size = SIGNAL_LOG.stat().st_size
-                    if current_size > self._last_size:
-                        new_lines = self._read_new(current_size)
-                        self._last_size = current_size
+                    if current_size > self._last_signal_size:
+                        new_lines = self._read_new_from(
+                            SIGNAL_LOG, self._last_signal_size, current_size,
+                        )
+                        self._last_signal_size = current_size
                         for line in new_lines:
-                            await self._broadcast(line)
-                    elif current_size < self._last_size:
-                        # File was truncated/rotated
-                        self._last_size = current_size
+                            await self._broadcast({"type": "signal", "data": line})
+                    elif current_size < self._last_signal_size:
+                        self._last_signal_size = current_size
+
+                # Analysis log
+                if ANALYSIS_LOG.exists():
+                    current_size = ANALYSIS_LOG.stat().st_size
+                    if current_size > self._last_analysis_size:
+                        new_lines = self._read_new_from(
+                            ANALYSIS_LOG, self._last_analysis_size, current_size,
+                        )
+                        self._last_analysis_size = current_size
+                        for line in new_lines:
+                            await self._broadcast({"type": "analysis", "data": line})
+                    elif current_size < self._last_analysis_size:
+                        self._last_analysis_size = current_size
+
+                # Proposed goals (JSON file — check hash)
+                if PROPOSED_GOALS.exists():
+                    try:
+                        content = PROPOSED_GOALS.read_text()
+                        content_hash = str(hash(content))
+                        if content_hash != self._last_proposed_hash:
+                            if self._last_proposed_hash:
+                                # Only broadcast after initial load
+                                proposed = json.loads(content) if content.strip() else []
+                                await self._broadcast({
+                                    "type": "proposed",
+                                    "data": proposed,
+                                })
+                            self._last_proposed_hash = content_hash
+                    except Exception:
+                        pass
             except Exception:
                 pass
             await asyncio.sleep(1)
 
-    def _read_new(self, current_size: int) -> list[dict]:
-        """Read new lines from the signal log."""
+    def _read_new_from(
+        self, path: Path, last_size: int, current_size: int,
+    ) -> list[dict]:
+        """Read new lines from a JSONL file."""
         results: list[dict] = []
         try:
-            with open(SIGNAL_LOG, "rb") as f:
-                f.seek(self._last_size)
-                data = f.read(current_size - self._last_size)
+            with open(path, "rb") as f:
+                f.seek(last_size)
+                data = f.read(current_size - last_size)
             for line in data.decode("utf-8", errors="replace").split("\n"):
                 line = line.strip()
                 if line:

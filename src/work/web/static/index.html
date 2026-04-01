@@ -531,14 +531,19 @@ nav {
 .thinking {
   align-self: flex-start; color: #7d8590;
   font-size: 0.85rem; padding: 8px 16px;
+  display: flex; align-items: center; gap: 8px;
 }
-.thinking-dots::after {
-  content: ''; animation: dots 1.4s infinite;
+.typing-indicator span {
+  display: inline-block; width: 8px; height: 8px;
+  background: #58a6ff; border-radius: 50%; margin: 0 2px;
+  animation: bounce 1.4s infinite ease-in-out both;
 }
-@keyframes dots {
-  0%, 20% { content: '.'; }
-  40% { content: '..'; }
-  60%, 100% { content: '...'; }
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
 }
 
 /* ================================================================
@@ -733,6 +738,35 @@ body.on-chat-page #chat-panel { display: none; }
   font-size: 0.82rem; cursor: pointer; padding: 4px 0;
 }
 .collapsible-toggle:hover { text-decoration: underline; }
+
+/* Goal status dimming */
+.goal-card.goal-dimmed { opacity: 0.45; }
+.goal-card.goal-dimmed:hover { opacity: 0.7; }
+
+/* Status dropdown in detail header */
+.status-select {
+  background: #0d1117; border: 1px solid #30363d;
+  border-radius: 6px; padding: 4px 10px;
+  color: #e6edf3; font-size: 0.82rem;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer; outline: none;
+}
+.status-select:focus { border-color: #58a6ff; }
+
+/* Onboarding section */
+.onboarding-section {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 8px; padding: 20px; margin-bottom: 16px;
+}
+.onboarding-section h3 {
+  font-size: 1rem; margin-bottom: 8px; color: #e6edf3;
+}
+.onboarding-section p {
+  font-size: 0.9rem; color: #7d8590; line-height: 1.6;
+}
+.onboarding-section .onboarding-icon {
+  font-size: 1.4rem; margin-right: 8px; vertical-align: middle;
+}
 </style>
 </head>
 <body>
@@ -909,6 +943,7 @@ const state = {
   chatSending: false,
   chatPanelOpen: false,
   editingPendingId: null,
+  _monitorRunning: false,
   // Data hashes for smart polling (only re-render if data changed)
   _hashes: {},
 };
@@ -1111,6 +1146,7 @@ function updateLastAnalysis() {
 async function updateMonitorStatus() {
   try {
     var status = await api('/api/status');
+    state._monitorRunning = status.monitor_running;
     var el = document.getElementById('monitorStatus');
     if (!el) return;
     if (status.monitor_running) {
@@ -1126,8 +1162,6 @@ async function updateMonitorStatus() {
     }
   } catch(e) {}
 }
-// Poll every 10 seconds
-setInterval(updateMonitorStatus, 10000);
 
 /* ================================================================
    API
@@ -1241,10 +1275,29 @@ function connectWS() {
     state.ws = new WebSocket(proto + '//' + location.host + '/ws/signals');
     state.ws.onmessage = function(e) {
       try {
-        var signal = JSON.parse(e.data);
-        state.signals.push(signal);
-        if (state.signals.length > 500) state.signals = state.signals.slice(-300);
-        if (state.currentPage === 'activity') appendSignalRow(signal);
+        var msg = JSON.parse(e.data);
+        var msgType = msg.type || 'signal';
+        var data = msg.data || msg;
+
+        if (msgType === 'signal') {
+          state.signals.push(data);
+          if (state.signals.length > 500) state.signals = state.signals.slice(-300);
+          if (state.currentPage === 'activity') appendSignalRow(data);
+        } else if (msgType === 'analysis') {
+          state.analysis.push(data);
+          updateLastAnalysis();
+          if (state.currentPage === 'home' || state.currentPage === 'activity' || state.currentPage.startsWith('goal/')) {
+            renderCurrentPage();
+          }
+        } else if (msgType === 'proposed') {
+          // data is the full proposed array
+          if (Array.isArray(data)) {
+            state.proposed = data;
+          }
+          if (state.currentPage === 'home' || state.currentPage === 'goals') {
+            renderCurrentPage();
+          }
+        }
       } catch(err) {}
     };
     state.ws.onclose = function() { setTimeout(connectWS, 3000); };
@@ -1273,6 +1326,44 @@ function renderHome() {
 
   var html = '<div class="greeting">' + greeting() + ', David.' +
     '<span class="sub">Here\'s what\'s happening.</span></div>';
+
+  // Onboarding when cold
+  var hasGoals = state.goals.length > 0;
+  var hasAnalysis = state.analysis.length > 0;
+  var hasProposed = state.proposed.length > 0;
+  var hasPending = pendingActions.length > 0;
+  var isCold = !hasGoals && !hasAnalysis && !hasProposed && !hasPending;
+
+  if (isCold || !hasGoals || !hasAnalysis) {
+    var onboardingHtml = '';
+    if (!hasGoals) {
+      onboardingHtml += '<div class="onboarding-section">' +
+        '<h3><span class="onboarding-icon">&#127919;</span>Welcome! Start by adding your first goal.</h3>' +
+        '<p>Goals help the system understand what matters to you. Once you add goals, the monitor will match signals from your desktop, messages, and calendar to track progress.</p>' +
+        '<button class="btn btn-primary mt-8" onclick="openAddGoalModal()">+ Add Goal</button>' +
+        '</div>';
+    }
+    if (!state._monitorRunning && hasGoals) {
+      onboardingHtml += '<div class="onboarding-section">' +
+        '<h3><span class="onboarding-icon">&#9888;&#65039;</span>The monitor is not running.</h3>' +
+        '<p>Start it to begin tracking signals. Run <code>work monitor</code> in your terminal.</p>' +
+        '</div>';
+    }
+    if (hasGoals && !hasAnalysis) {
+      onboardingHtml += '<div class="onboarding-section">' +
+        '<h3><span class="onboarding-icon">&#9200;</span>Goals are set! The monitor will analyze your activity every 5 minutes.</h3>' +
+        '<p>Once the monitor runs its first analysis cycle, highlights and matches will appear here.</p>' +
+        '</div>';
+    }
+    html += onboardingHtml;
+  }
+
+  // Quick stats bar (always show)
+  html += '<div class="card stats-bar mb-16">' +
+    '<div class="stat"><div class="stat-value">' + todaySignals + '</div><div class="stat-label">Signals Today</div></div>' +
+    '<div class="stat"><div class="stat-value">' + state.goals.length + '</div><div class="stat-label">Goals</div></div>' +
+    '<div class="stat"><div class="stat-value">' + state.memory.reduce(function(acc, m) { return acc + (m.content ? m.content.split("\\n").filter(function(l) { return l.trim().startsWith("- "); }).length : 0); }, 0) + '</div><div class="stat-label">Memories</div></div>' +
+    '</div>';
 
   // Proposed Goals - prominent cards
   if (state.proposed.length > 0) {
@@ -1371,14 +1462,6 @@ function renderHome() {
     html += '</div>';
   }
 
-  // Stats
-  html += '<div class="card stats-bar">' +
-    '<div class="stat"><div class="stat-value">' + todaySignals + '</div><div class="stat-label">Signals Today</div></div>' +
-    '<div class="stat"><div class="stat-value">' + state.goals.length + '</div><div class="stat-label">Active Goals</div></div>' +
-    '<div class="stat"><div class="stat-value">' + pendingActions.length + '</div><div class="stat-label">Pending Actions</div></div>' +
-    '<div class="stat"><div class="stat-value">' + state.analysis.length + '</div><div class="stat-label">Analysis Cycles</div></div>' +
-    '</div>';
-
   appEl.innerHTML = html;
 }
 
@@ -1454,12 +1537,14 @@ function renderGoals() {
       var mc = matchCounts[g.name] || 0;
       var pc = pendingCounts[g.name] || 0;
       var href = '#goal/' + key + '/' + encodeURIComponent(g.name);
-      html += '<div class="card goal-card" onclick="location.hash=\'' + href + '\'">' +
+      var isDimmed = (g.status === 'Complete' || g.status === 'Archived');
+      html += '<div class="card goal-card' + (isDimmed ? ' goal-dimmed' : '') + '" onclick="location.hash=\'' + href + '\'">' +
         '<div class="goal-icon">' + (g.icon || '&#9898;') + '</div>' +
         '<div class="goal-name">' + esc(g.name) + '</div>' +
         '<div class="goal-desc">' + esc((g.description || '').split('\n')[0]) + '</div>' +
         '<div class="goal-meta">' +
         '<span>' + mc + ' signal' + (mc !== 1 ? 's' : '') + '</span>' +
+        (g.status && g.status !== 'Active' ? '<span style="color:#7d8590;">' + esc(g.status) + '</span>' : '') +
         (pc > 0 ? '<span style="color:#d29922;">' + pc + ' pending</span>' : '') +
         '</div></div>';
     });
@@ -1565,13 +1650,20 @@ function renderGoalDetail(scopeStr, name) {
   // Collect key people for empty state
   var keyPeopleNames = (goal.key_people || []).join(', ');
 
-  // Header
+  // Header with status dropdown
+  var statusOptions = ['Active', 'Paused', 'Complete', 'Archived'];
+  var statusSelectHtml = '<select class="status-select" onchange="changeGoalStatus(this.value, \'' + esc(scopeStr) + '\', \'' + esc(goal.name).replace(/'/g, "\\'") + '\')">';
+  statusOptions.forEach(function(s) {
+    statusSelectHtml += '<option value="' + s + '"' + ((goal.status || 'Active') === s ? ' selected' : '') + '>' + s + '</option>';
+  });
+  statusSelectHtml += '</select>';
+
   html += '<div class="detail-header">' +
     '<div class="detail-icon">' + (goal.icon || '&#9898;') + '</div>' +
     '<div style="flex:1;">' +
     '<div class="detail-name">' + esc(goal.name) + '</div>' +
-    '<span class="badge badge-blue">' + esc(scopeLabel(goal.scope, goal.scope_name)) + '</span>' +
-    (goal.status ? ' <span class="badge badge-green">' + esc(goal.status) + '</span>' : '') +
+    '<span class="badge badge-blue">' + esc(scopeLabel(goal.scope, goal.scope_name)) + '</span> ' +
+    statusSelectHtml +
     '</div>' +
     '<button class="btn btn-sm" onclick="openEditGoalModal(\'' + esc(scopeStr) + '\', \'' + esc(goal.name).replace(/'/g, "\\'") + '\')">Edit</button>' +
     '</div>';
@@ -1691,6 +1783,17 @@ function renderGoalDetail(scopeStr, name) {
         }
       });
     }
+
+    // Filter out markdown headings and icon/status lines from actions
+    filteredActions = filteredActions.filter(function(line) {
+      var trimmed = line.trim();
+      if (!trimmed) return false;
+      // Skip lines starting with # (markdown headings)
+      if (/^#+\s/.test(trimmed)) return false;
+      // Skip icon | status lines like "🤸 | Active"
+      if (/^.{1,4}\s*\|\s*(Active|Paused|Complete|Archived)/i.test(trimmed)) return false;
+      return true;
+    });
 
     if (filteredActions.length > 0) {
       html += '<div class="section">' +
@@ -1899,11 +2002,10 @@ function renderChat() {
   }, 50);
 }
 
-function renderChatMessages() {
-  var container = document.getElementById('chatMessages');
+function renderMessages(container, messages) {
   if (!container) return;
 
-  if (state.conversation.length === 0) {
+  if (messages.length === 0) {
     container.innerHTML = '<div class="chat-welcome">' +
       '<h2>Hi David</h2>' +
       '<p>I\'m your productivity agent. I can see your goals, monitor your desktop, and help you get things done. Ask me anything.</p>' +
@@ -1912,7 +2014,7 @@ function renderChatMessages() {
   }
 
   var html = '';
-  state.conversation.forEach(function(msg) {
+  messages.forEach(function(msg) {
     var isUser = msg.role === 'user';
     var isProactive = msg.proactive;
     var cls = isUser ? 'msg msg-user' : (isProactive ? 'msg msg-proactive' : 'msg msg-agent');
@@ -1926,11 +2028,15 @@ function renderChatMessages() {
   });
 
   if (state.chatSending) {
-    html += '<div class="thinking">Thinking<span class="thinking-dots"></span></div>';
+    html += '<div class="thinking"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
   }
 
   container.innerHTML = html;
   container.scrollTop = container.scrollHeight;
+}
+
+function renderChatMessages() {
+  renderMessages(document.getElementById('chatMessages'), state.conversation);
 }
 
 function autoGrow(el) {
@@ -2202,6 +2308,31 @@ async function deleteGoal() {
   }
 }
 
+async function changeGoalStatus(newStatus, scopeStr, goalName) {
+  var goal = state.goals.find(function(g) {
+    return scopeKey(g.scope, g.scope_name) === scopeStr && g.name === goalName;
+  });
+  if (!goal) return;
+  try {
+    await api('/api/goals', {
+      method: 'POST',
+      body: JSON.stringify({
+        scope: goal.scope,
+        scope_name: goal.scope_name || null,
+        name: goal.name,
+        description: goal.description || '',
+        key_people: goal.key_people || [],
+        icon: goal.icon || '',
+        status: newStatus,
+      }),
+    });
+    await loadGoals();
+    renderCurrentPage();
+  } catch(e) {
+    alert('Failed to update status: ' + e.message);
+  }
+}
+
 /* ================================================================
    Contacts
    ================================================================ */
@@ -2365,32 +2496,7 @@ function closeChatPanel() {
 }
 
 function renderChatPanelMessages() {
-  var container = document.getElementById('chat-panel-messages');
-  if (!container) return;
-  if (state.conversation.length === 0) {
-    container.innerHTML = '<div class="chat-welcome" style="padding:30px 20px;">' +
-      '<h2>Hi David</h2>' +
-      '<p>Ask me anything about your goals, schedule, or tasks.</p>' +
-      '</div>';
-    return;
-  }
-  var html = '';
-  state.conversation.forEach(function(msg) {
-    var isUser = msg.role === 'user';
-    var isProactive = msg.proactive;
-    var cls = isUser ? 'msg msg-user' : (isProactive ? 'msg msg-proactive' : 'msg msg-agent');
-    var content = isUser ? '<p>' + esc(msg.content) + '</p>' : renderMarkdown(msg.content || '');
-    var prefix = isProactive ? '<span style="color:#d29922;">&#128276;</span> ' : '';
-    html += '<div class="' + cls + '">' +
-      '<div class="msg-content">' + prefix + content + '</div>' +
-      '<div class="msg-time">' + fmtTime(msg.timestamp) + '</div>' +
-      '</div>';
-  });
-  if (state.chatSending) {
-    html += '<div class="thinking">Thinking<span class="thinking-dots"></span></div>';
-  }
-  container.innerHTML = html;
-  container.scrollTop = container.scrollHeight;
+  renderMessages(document.getElementById('chat-panel-messages'), state.conversation);
 }
 
 async function sendBarChat() {
@@ -2448,6 +2554,17 @@ document.addEventListener('keydown', function(e) {
     });
     if (state.chatPanelOpen) closeChatPanel();
   }
+  // Cmd+K or "/" to focus chat bar (when not already in an input)
+  var tag = (e.target.tagName || '').toLowerCase();
+  var isInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+  if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !isInput)) {
+    e.preventDefault();
+    var chatBarInput = document.getElementById('chat-bar-input');
+    if (chatBarInput) {
+      chatBarInput.focus();
+      if (!state.chatPanelOpen) openChatPanel();
+    }
+  }
 });
 
 // Close modal on overlay click
@@ -2468,13 +2585,32 @@ document.addEventListener('click', function(e) {
 });
 
 /* ================================================================
-   Polling - smart: only re-render when data changes and page is relevant
+   Polling - unified: only poll data relevant to the current page
    ================================================================ */
-setInterval(loadConversation, 5000);
-setInterval(pollProposed, 15000);
-setInterval(pollPending, 15000);
-setInterval(pollGoals, 30000);
-setInterval(pollAnalysis, 60000);
+function smartPoll() {
+    var page = state.currentPage;
+    updateMonitorStatus(); // always
+
+    if (page === 'home') {
+        pollProposed();
+        pollPending();
+        pollAnalysis();
+    } else if (page === 'chat') {
+        loadConversation();
+    } else if (page === 'activity') {
+        // signals come via WebSocket, just load analysis
+        pollAnalysis();
+    } else if (page === 'goals' || page.startsWith('goal/')) {
+        pollGoals();
+        pollPending();
+        pollAnalysis();
+    }
+}
+setInterval(smartPoll, 10000);
+// Faster chat poll when on chat page
+setInterval(function() {
+    if (state.currentPage === 'chat') loadConversation();
+}, 5000);
 
 /* ================================================================
    Init
