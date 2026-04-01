@@ -170,6 +170,8 @@ class MonitorLoop:
                     analyzed = await self._analyze_screenshot(sig)
                     if analyzed:
                         processed.append(analyzed)
+                        # Notify what we're seeing on screen
+                        self._notify("Screen", analyzed.text[:200])
                 else:
                     processed.append(sig)
 
@@ -257,18 +259,44 @@ class MonitorLoop:
         self.last_match_time = datetime.now(timezone.utc)
         log.info("Found %d matches out of %d signals", len(actual_matches), len(matches))
 
-        # Show everything in display (including skips with reasoning)
-        if self.display:
-            for match in matches:
+        # Show everything in display and notify reasoning
+        skip_reasons = []
+        for match in matches:
+            if self.display:
                 self.display.show_match(match)
-                # Handle proposed goals
-                if match.get("proposed_goal"):
-                    pg = match["proposed_goal"]
-                    log.info("Goal proposed: %s", pg.get("name", "?"))
-                    self._notify(
-                        f"New goal detected: {pg.get('name', '?')}",
-                        pg.get("description", ""),
-                    )
+
+            matched = match.get("matched", False)
+            conf = match.get("confidence", "none")
+            reasoning = match.get("reasoning", "")
+
+            if match.get("proposed_goal"):
+                pg = match["proposed_goal"]
+                log.info("Goal proposed: %s", pg.get("name", "?"))
+                self._notify(
+                    f"New goal? {pg.get('name', '?')}",
+                    pg.get("description", ""),
+                )
+            elif matched and conf in ("medium", "high"):
+                goal = match.get("goal", "?")
+                self._notify(
+                    f"[{conf.upper()}] {goal}",
+                    reasoning[:200],
+                )
+            elif not matched:
+                summary = match.get("signal_summary", "")[:40]
+                skip_reasons.append(summary)
+
+        # Single notification summarizing all skips
+        if skip_reasons and not actual_matches:
+            self._notify(
+                f"Observed {len(skip_reasons)} signals, no goal match",
+                "; ".join(skip_reasons)[:200],
+            )
+        elif skip_reasons:
+            self._notify(
+                f"Matched {len(actual_matches)}, skipped {len(skip_reasons)}",
+                "; ".join(r.get("signal_summary", "")[:30] for r in actual_matches)[:200],
+            )
 
         # Route actual matches to the correct scope's hot buffer
         high_confidence_scopes: set[tuple[str, str | None]] = set()
