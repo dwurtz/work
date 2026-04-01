@@ -48,7 +48,6 @@ html, body {
   font-weight: 700;
   font-size: 16px;
   color: var(--accent);
-  letter-spacing: -0.5px;
 }
 .topbar-status {
   display: flex;
@@ -58,1584 +57,1185 @@ html, body {
   color: var(--muted);
 }
 .status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--muted);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
 }
-.status-dot.running { background: var(--green); }
-.topbar-spacer { flex: 1; }
-.topbar select, .topbar-info {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 4px 8px;
+.status-dot.stopped { background: var(--red); }
+.topbar-user {
+  margin-left: auto;
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
-}
-.topbar-info {
-  border: none;
-  background: none;
   color: var(--muted);
-  font-size: 11px;
 }
 
-/* ---- Three Column Layout ---- */
-.columns {
-  display: grid;
-  grid-template-columns: 30% 40% 30%;
-  height: calc(100vh - 48px);
-  overflow: hidden;
+/* ---- Main Layout ---- */
+.main-layout {
+  display: flex;
+  height: calc(100% - 48px);
 }
-.column {
+
+/* ---- Sidebars ---- */
+.sidebar-left {
+  width: 250px;
+  min-width: 250px;
+  background: var(--panel);
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-right {
+  width: 300px;
+  min-width: 300px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.column:last-child { border-right: none; }
 
-.column-header {
-  padding: 10px 14px;
+/* ---- Collapsible Sections ---- */
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  flex-shrink: 0;
 }
-.column-body {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.column-body::-webkit-scrollbar { display: none; }
-
-/* ---- Signal Feed ---- */
-.signal-filters {
-  display: flex;
-  gap: 6px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  flex-shrink: 0;
-}
-.signal-filters select, .signal-filters input {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-family: 'Inter', sans-serif;
-}
-.signal-filters input { flex: 1; }
-
-.signal-item {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.1s;
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
-  font-size: 12px;
-}
-.signal-item:hover { background: rgba(255,255,255,0.03); }
-.signal-item.expanded { background: rgba(88,166,255,0.05); }
-
-.signal-time {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.signal-source {
-  font-family: 'JetBrains Mono', monospace;
+.section-header:hover { color: var(--text); }
+.section-chevron {
   font-size: 10px;
-  font-weight: 500;
-  padding: 1px 6px;
-  border-radius: 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.signal-match-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-}
-.signal-match-dot.high { background: var(--green); }
-.signal-match-dot.medium { background: var(--yellow); }
-.signal-match-dot.hidden { display: none; }
-
-.signal-content { flex: 1; min-width: 0; }
-.signal-sender { font-weight: 500; color: var(--text); }
-.signal-text { color: var(--muted); word-break: break-word; }
-
-.signal-detail {
-  display: none;
-  padding: 6px 10px 10px 40px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(88,166,255,0.03);
-  font-size: 11px;
-}
-.signal-detail.open { display: block; }
-.signal-detail-row {
-  margin: 3px 0;
-  display: flex;
-  gap: 8px;
-}
-.signal-detail-label {
-  color: var(--muted);
-  font-weight: 500;
-  min-width: 70px;
-  flex-shrink: 0;
-}
-.signal-detail-value { color: var(--text); }
-
-/* Source colors */
-.source-imessage { background: rgba(0,255,255,0.15); color: cyan; }
-.source-whatsapp { background: rgba(0,200,83,0.15); color: #00c853; }
-.source-clipboard { background: rgba(255,0,255,0.15); color: magenta; }
-.source-screenshot { background: rgba(50,100,255,0.15); color: #5080ff; }
-.source-active_app { background: rgba(30,144,255,0.15); color: dodgerblue; }
-.source-email { background: rgba(0,139,139,0.15); color: darkcyan; }
-.source-calendar { background: rgba(50,205,50,0.15); color: limegreen; }
-.source-drive { background: rgba(218,112,214,0.15); color: orchid; }
-.source-tasks { background: rgba(255,255,255,0.12); color: white; }
-.source-chrome { background: rgba(255,200,0,0.15); color: #ffc800; }
-.source-observation { background: rgba(150,150,255,0.15); color: #9696ff; }
-.source-inference { background: rgba(255,165,0,0.15); color: orange; }
-
-/* ---- Goals & Actions ---- */
-.scope-section {
-  border-bottom: 1px solid var(--border);
-}
-.scope-header {
-  padding: 10px 14px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--panel);
-  user-select: none;
-}
-.scope-header:hover { background: rgba(255,255,255,0.03); }
-.scope-chevron {
-  font-size: 10px;
-  color: var(--muted);
   transition: transform 0.15s;
 }
-.scope-chevron.open { transform: rotate(90deg); }
-.scope-body { display: none; }
-.scope-body.open { display: block; }
-
-/* Proposed goals area */
-.proposed-section {
-  border-bottom: 2px solid var(--amber);
-  background: rgba(227,179,65,0.04);
-}
-.proposed-header {
-  padding: 10px 14px;
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--amber);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.proposed-item {
-  padding: 8px 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.proposed-info { flex: 1; }
-.proposed-name { font-weight: 600; }
-.proposed-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
-.proposed-people { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.proposed-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
-
-.goal-card {
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-}
-.goal-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-.goal-icon { font-size: 14px; }
-.goal-name { font-weight: 600; font-size: 13px; }
-.goal-status {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-weight: 500;
-}
-.goal-status-active { background: rgba(63,185,80,0.15); color: var(--green); }
-.goal-status-proposed { background: rgba(210,153,34,0.15); color: var(--yellow); }
-.goal-delete {
+.section-header.collapsed .section-chevron { transform: rotate(-90deg); }
+.section-badge {
   margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.goal-card:hover .goal-delete { opacity: 1; }
-.goal-delete:hover { color: var(--red); background: rgba(248,81,73,0.1); }
-
-.goal-desc {
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 4px;
-  display: none;
-}
-.goal-desc.open { display: block; }
-
-.goal-people {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-.person-tag {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 8px;
-  background: rgba(88,166,255,0.12);
-  color: var(--accent);
-}
-
-/* Matched signals under a goal */
-.goal-matches { margin-top: 6px; }
-.goal-matches-title {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-.goal-match-item {
-  padding: 4px 8px;
-  margin: 3px 0;
-  background: rgba(255,255,255,0.02);
-  border-radius: 4px;
-  border-left: 2px solid var(--border);
-  font-size: 11px;
-}
-.goal-match-item.high { border-left-color: var(--green); }
-.goal-match-item.medium { border-left-color: var(--yellow); }
-.goal-match-item.low { border-left-color: var(--muted); }
-
-.goal-match-signal {
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  word-break: break-word;
-}
-.goal-match-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-.goal-match-reasoning {
-  color: var(--muted);
-  font-size: 11px;
-  flex: 1;
-}
-.confidence-badge {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
-}
-.confidence-high { background: rgba(63,185,80,0.2); color: var(--green); }
-.confidence-medium { background: rgba(210,153,34,0.2); color: var(--yellow); }
-.confidence-low { background: rgba(125,133,144,0.2); color: var(--muted); }
-.confidence-none { background: rgba(125,133,144,0.1); color: var(--muted); }
-
-/* Actions under goal */
-.goal-actions {
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.goal-actions li {
-  margin: 2px 0 2px 14px;
-}
-
-/* Add goal button */
-.add-goal-bar {
-  padding: 8px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
-  flex-shrink: 0;
-}
-
-/* ---- Memory & Analysis ---- */
-.tab-bar {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  flex-shrink: 0;
-}
-.tab {
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
-}
-.tab.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-.tab:hover { color: var(--text); }
-
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-.memory-scope {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.memory-scope-title {
-  font-weight: 600;
-  font-size: 12px;
-  margin-bottom: 6px;
-  color: var(--accent);
-}
-.memory-content {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.analysis-item {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-}
-.analysis-item:hover { background: rgba(255,255,255,0.02); }
-.analysis-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.analysis-time {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--muted);
-}
-.analysis-stats {
-  display: flex;
-  gap: 10px;
-  font-size: 11px;
-}
-.analysis-stat { color: var(--muted); }
-.analysis-stat b { color: var(--text); font-weight: 600; }
-.analysis-detail {
-  display: none;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.analysis-detail.open { display: block; }
-.analysis-detail pre {
-  font-family: 'JetBrains Mono', monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 10px;
-  margin-top: 4px;
-  padding: 6px;
-  background: var(--bg);
-  border-radius: 4px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-/* ---- Pending Actions ---- */
-.pending-section {
-  border-bottom: 2px solid var(--accent);
-  background: rgba(88,166,255,0.03);
-}
-.pending-header {
-  padding: 10px 14px;
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-}
-.pending-header:hover { background: rgba(255,255,255,0.03); }
-.pending-count {
-  font-size: 10px;
-  font-weight: 600;
   background: var(--accent);
-  color: #000;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: 10px;
   min-width: 18px;
   text-align: center;
 }
-.pending-header .scope-chevron { color: var(--accent); }
-.pending-header-spacer { flex: 1; }
-.pending-body { display: none; }
-.pending-body.open { display: block; }
-
-.pending-item {
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  transition: background 0.1s;
+.section-body {
+  overflow: hidden;
+  transition: max-height 0.2s ease;
 }
-.pending-item:hover { background: rgba(255,255,255,0.02); }
-.pending-item.priority-high { border-left: 3px solid var(--red); }
-.pending-item.priority-medium { border-left: 3px solid var(--yellow); }
-.pending-item.priority-low { border-left: 3px solid var(--muted); }
+.section-header.collapsed + .section-body { max-height: 0 !important; }
 
-.pending-meta {
+/* ---- Goals ---- */
+.goal-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
+  padding: 8px 12px;
+  gap: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
 }
-.pending-type-badge {
+.goal-item:hover { background: rgba(88,166,255,0.06); }
+.goal-icon { font-size: 14px; }
+.goal-name { flex: 1; }
+.goal-scope {
   font-size: 10px;
-  font-weight: 500;
   padding: 1px 6px;
   border-radius: 8px;
-  white-space: nowrap;
-}
-.pending-type-research { background: rgba(88,166,255,0.15); color: var(--accent); }
-.pending-type-draft_email { background: rgba(0,255,255,0.15); color: cyan; }
-.pending-type-draft_message { background: rgba(63,185,80,0.15); color: var(--green); }
-.pending-type-create_document { background: rgba(218,112,214,0.15); color: orchid; }
-.pending-type-suggestion { background: rgba(210,153,34,0.15); color: var(--yellow); }
-.pending-goal-name {
-  font-size: 10px;
-  color: var(--muted);
+  background: rgba(88,166,255,0.15);
+  color: var(--accent);
   font-weight: 500;
 }
-.pending-priority-badge {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+.goal-item.proposed {
+  border-left: 3px solid var(--amber);
 }
-.pending-priority-high { background: rgba(248,81,73,0.2); color: var(--red); }
-.pending-priority-medium { background: rgba(210,153,34,0.2); color: var(--yellow); }
-.pending-priority-low { background: rgba(125,133,144,0.2); color: var(--muted); }
+.goal-actions {
+  display: flex;
+  gap: 4px;
+}
+.goal-actions button {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-accept { background: var(--green); color: #fff; }
+.btn-reject { background: var(--red); color: #fff; }
+.btn-add-goal {
+  width: 100%;
+  padding: 8px;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+.btn-add-goal:hover { color: var(--accent); border-color: var(--accent); }
 
-.pending-title {
+/* ---- Memory ---- */
+.memory-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.memory-item:hover { color: var(--text); }
+.memory-scope {
+  font-size: 10px;
   font-weight: 600;
-  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--accent);
   margin-bottom: 2px;
 }
-.pending-desc {
+.memory-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.memory-text.expanded {
+  white-space: normal;
+}
+
+/* ---- Actions list (left sidebar) ---- */
+.action-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.action-item-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--yellow);
+  margin-bottom: 2px;
+}
+.action-item-title {
+  color: var(--text);
+}
+
+/* ---- Center (Conversation) ---- */
+.center-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.conversation {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Messages */
+.msg {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  word-wrap: break-word;
+}
+.msg-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.msg-agent {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.msg-proactive {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-bottom-left-radius: 4px;
+}
+.msg-proactive .proactive-icon {
+  margin-right: 4px;
+}
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.msg-user .msg-time { color: rgba(255,255,255,0.6); }
+
+/* Markdown inside messages */
+.msg h3 { font-size: 14px; margin: 8px 0 4px; }
+.msg h4 { font-size: 13px; margin: 6px 0 3px; }
+.msg strong { font-weight: 600; }
+.msg em { font-style: italic; }
+.msg ul { margin: 4px 0 4px 16px; }
+.msg li { margin: 2px 0; }
+.msg code {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.msg pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 6px 0;
+  overflow-x: auto;
+}
+.msg pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+}
+.msg a { color: var(--accent); text-decoration: none; }
+.msg a:hover { text-decoration: underline; }
+
+/* Action cards inside messages */
+.action-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+}
+.action-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.action-card-content {
   font-size: 12px;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  white-space: pre-wrap;
 }
-.pending-recipient {
+.action-card-buttons {
+  display: flex;
+  gap: 6px;
+}
+.action-card-buttons button {
   font-size: 11px;
-  color: var(--accent);
-  margin-bottom: 4px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: inherit;
 }
-.pending-content-preview {
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #2ea043; }
+.btn-yellow { background: var(--yellow); color: #fff; }
+.btn-yellow:hover { background: #b8860b; }
+.btn-muted-action { background: var(--border); color: var(--muted); }
+.btn-muted-action:hover { background: #484f58; }
+
+/* Welcome message */
+.welcome-msg {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  padding: 16px 20px;
+  max-width: 75%;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* Thinking indicator */
+.thinking {
+  align-self: flex-start;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.thinking.visible { display: flex; }
+.thinking-dots span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: dot-pulse 1.2s infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* ---- Input Bar ---- */
+.input-bar {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.input-bar textarea {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+  resize: none;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.4;
+  outline: none;
+}
+.input-bar textarea:focus { border-color: var(--accent); }
+.input-bar textarea::placeholder { color: var(--muted); }
+.send-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.send-btn:hover { background: #4090e0; }
+.send-btn:disabled { opacity: 0.4; cursor: default; }
+.send-btn svg { width: 18px; height: 18px; }
+
+/* ---- Right Sidebar ---- */
+.right-section {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.right-section-fixed {
+  flex-shrink: 0;
+}
+
+/* Signal Feed */
+.signal-feed {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100px;
+}
+.signal-filter {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.signal-filter select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  outline: none;
+}
+.signal-entry {
+  padding: 4px 12px;
+  font-size: 11px;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(48,54,61,0.5);
+}
+.signal-time {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--muted);
-  background: var(--bg);
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin-bottom: 6px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 60px;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
+  flex-shrink: 0;
 }
-.pending-content-preview.expanded {
-  max-height: none;
-}
-.pending-content-preview:not(.expanded)::after {
-  content: '... click to expand';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(90deg, transparent, var(--bg) 40%);
-  padding: 0 8px 2px 20px;
-  font-style: italic;
-  color: var(--accent);
+.signal-source {
   font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
-.pending-actions-row {
+.source-email { background: rgba(88,166,255,0.15); color: var(--accent); }
+.source-calendar { background: rgba(63,185,80,0.15); color: var(--green); }
+.source-desktop { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.source-browser { background: rgba(248,81,73,0.15); color: var(--red); }
+.source-slack { background: rgba(188,140,255,0.15); color: #bc8cff; }
+.source-default { background: rgba(125,133,144,0.15); color: var(--muted); }
+.signal-text {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Analysis History */
+.analysis-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  cursor: pointer;
+}
+.analysis-item:hover { background: rgba(88,166,255,0.04); }
+.analysis-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+.analysis-counts {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+.analysis-count {
+  font-size: 10px;
+}
+.analysis-count.matches { color: var(--green); }
+.analysis-count.skipped { color: var(--muted); }
+.analysis-detail {
+  display: none;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.analysis-item.expanded .analysis-detail { display: block; }
+
+/* Pending Actions (right sidebar) */
+.pending-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.pending-meta {
   display: flex;
   gap: 6px;
-}
-.btn-yellow { border-color: var(--yellow); color: var(--yellow); }
-.btn-yellow:hover { background: rgba(210,153,34,0.15); }
-
-.pending-spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: pending-spin 0.6s linear infinite;
-  vertical-align: middle;
-  margin-left: 6px;
-}
-@keyframes pending-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ---- Buttons ---- */
-.btn {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.btn:hover { background: rgba(255,255,255,0.06); }
-.btn-green { border-color: var(--green); color: var(--green); }
-.btn-green:hover { background: rgba(63,185,80,0.15); }
-.btn-red { border-color: var(--red); color: var(--red); }
-.btn-red:hover { background: rgba(248,81,73,0.15); }
-.btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
-.btn-primary:hover { background: #79b8ff; }
-
-/* ---- Modal ---- */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 100;
   align-items: center;
-  justify-content: center;
+  margin-bottom: 4px;
 }
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
-  min-width: 400px;
-  max-width: 500px;
+.pending-type {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(210,153,34,0.15);
+  color: var(--yellow);
 }
-.modal h3 {
-  font-size: 15px;
-  margin-bottom: 14px;
-}
-.modal label {
-  display: block;
-  font-size: 11px;
-  font-weight: 500;
+.pending-goal {
+  font-size: 10px;
   color: var(--muted);
-  margin-bottom: 3px;
-  margin-top: 10px;
 }
-.modal input, .modal textarea, .modal select {
-  width: 100%;
-  background: var(--bg);
+.pending-title {
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
+  margin-bottom: 6px;
 }
-.modal textarea { resize: vertical; min-height: 60px; }
-.modal-actions {
+.pending-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 4px;
 }
+.pending-buttons button {
+  font-size: 10px;
+  padding: 3px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: inherit;
+}
+.btn-run-agents {
+  width: calc(100% - 24px);
+  margin: 8px 12px;
+  padding: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.btn-run-agents:hover { background: #4090e0; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 </style>
 </head>
 <body>
 
 <!-- Top Bar -->
 <div class="topbar">
-  <div class="topbar-logo">work</div>
+  <span class="topbar-logo">work</span>
   <div class="topbar-status">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusText">Monitor: checking...</span>
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">monitoring</span>
   </div>
-  <div class="topbar-spacer"></div>
-  <select id="scopeFilter" title="Filter by scope">
-    <option value="">All Scopes</option>
-  </select>
-  <span class="topbar-info" id="lastAnalysis">Last analysis: --</span>
+  <span class="topbar-user">david@davidwurtz</span>
 </div>
 
-<!-- Three Columns -->
-<div class="columns">
+<!-- Main Layout -->
+<div class="main-layout">
 
-  <!-- Left: Signal Feed -->
-  <div class="column">
-    <div class="column-header">Signal Feed</div>
-    <div class="signal-filters">
-      <select id="sourceFilter" title="Filter by source">
-        <option value="">all</option>
-      </select>
-      <input type="text" id="searchFilter" placeholder="search signals..." />
+  <!-- Left Sidebar -->
+  <div class="sidebar-left">
+    <!-- Goals -->
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Goals
     </div>
-    <div class="column-body" id="signalFeed"></div>
-  </div>
-
-  <!-- Center: Goals & Actions -->
-  <div class="column">
-    <div class="column-header">Goals &amp; Actions</div>
-    <div class="column-body" id="goalsPanel"></div>
-    <div class="add-goal-bar">
-      <button class="btn btn-primary" onclick="openAddGoal()" style="width:100%">+ Add Goal</button>
+    <div class="section-body" id="goals-body" style="max-height:9999px">
+      <div id="goals-list"></div>
+      <button class="btn-add-goal" onclick="addGoal()">+ Add Goal</button>
     </div>
-  </div>
 
-  <!-- Right: Memory & Analysis -->
-  <div class="column">
-    <div class="tab-bar">
-      <div class="tab active" onclick="switchTab('memory', this)">Memory</div>
-      <div class="tab" onclick="switchTab('analysis', this)">Analysis History</div>
+    <!-- Memory -->
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Memory
     </div>
-    <div class="column-body">
-      <div class="tab-content active" id="memoryTab"></div>
-      <div class="tab-content" id="analysisTab"></div>
+    <div class="section-body" id="memory-body" style="max-height:9999px">
+      <div id="memory-list"></div>
     </div>
-  </div>
 
-</div>
-
-<!-- Add Goal Modal -->
-<div class="modal-overlay" id="addGoalModal">
-  <div class="modal">
-    <h3>Add Goal</h3>
-    <label>Scope</label>
-    <select id="goalScope"></select>
-    <label>Name</label>
-    <input type="text" id="goalName" placeholder="e.g. Q2 Product Launch" />
-    <label>Description</label>
-    <textarea id="goalDesc" placeholder="What is this goal about?"></textarea>
-    <label>Key People (comma separated)</label>
-    <input type="text" id="goalPeople" placeholder="e.g. Alice, Bob" />
-    <label>Icon (emoji)</label>
-    <input type="text" id="goalIcon" placeholder="e.g. &amp;#x1F680;" maxlength="4" />
-    <div class="modal-actions">
-      <button class="btn" onclick="closeAddGoal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitGoal()">Create</button>
+    <!-- Actions -->
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Actions
+      <span class="section-badge" id="actions-badge" style="display:none">0</span>
+    </div>
+    <div class="section-body" id="actions-body" style="max-height:9999px">
+      <div id="actions-list"></div>
     </div>
   </div>
-</div>
 
-<!-- Edit Pending Modal -->
-<div class="modal-overlay" id="editPendingModal">
-  <div class="modal" style="max-width:600px">
-    <h3>Edit Pending Action</h3>
-    <input type="hidden" id="editPendingId" />
-    <label>Content</label>
-    <textarea id="editPendingContent" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:11px"></textarea>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeEditPending()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditPending()">Save</button>
+  <!-- Center Panel -->
+  <div class="center-panel">
+    <div class="conversation" id="conversation"></div>
+    <div class="input-bar">
+      <textarea id="chat-input" placeholder="Send a message..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="handleSend()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
     </div>
   </div>
+
+  <!-- Right Sidebar -->
+  <div class="sidebar-right">
+    <!-- Live Signal Feed -->
+    <div class="section-header right-section-fixed" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Live Signals
+    </div>
+    <div class="section-body" style="max-height:9999px; display:flex; flex-direction:column; flex:1; min-height:0;">
+      <div class="signal-filter">
+        <select id="signal-filter" onchange="renderSignals()">
+          <option value="all">All sources</option>
+          <option value="email">Email</option>
+          <option value="calendar">Calendar</option>
+          <option value="desktop">Desktop</option>
+          <option value="browser">Browser</option>
+          <option value="slack">Slack</option>
+        </select>
+      </div>
+      <div class="signal-feed" id="signal-feed"></div>
+    </div>
+
+    <!-- Analysis History -->
+    <div class="section-header right-section-fixed" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Analysis History
+    </div>
+    <div class="section-body" style="max-height:9999px">
+      <div id="analysis-list"></div>
+    </div>
+
+    <!-- Pending Actions -->
+    <div class="section-header right-section-fixed" onclick="toggleSection(this)">
+      <span class="section-chevron">&#9660;</span>
+      Pending Actions
+      <span class="section-badge" id="pending-badge" style="display:none">0</span>
+    </div>
+    <div class="section-body" style="max-height:9999px">
+      <div id="pending-list"></div>
+      <button class="btn-run-agents" onclick="runAgents()">Run Agents</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-const API = '';
-const SOURCE_COLORS = {
-  imessage: 'cyan', whatsapp: '#00c853', clipboard: 'magenta',
-  screenshot: '#5080ff', active_app: 'dodgerblue', email: 'darkcyan',
-  calendar: 'limegreen', drive: 'orchid', tasks: 'white',
-  chrome: '#ffc800', observation: '#9696ff', inference: 'orange',
-};
-
 // ---- State ----
-let allSignals = [];
+let conversation = [];
 let allGoals = [];
-let allAnalysis = [];
-let allProposed = [];
+let allSignals = [];
+let allPending = [];
 let allMemory = [];
 let allActions = [];
-let allPending = [];
-let allScopes = [];
-let analysisMatches = []; // from analysis endpoint, keyed by goal
-let currentScopeFilter = '';
-let currentSourceFilter = '';
-let currentSearchFilter = '';
+let allAnalysis = [];
+let wsConnected = false;
+let sending = false;
+let lastConversationLength = 0;
+
+// ---- Helpers ----
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ---- Markdown ----
+function renderMarkdown(text) {
+  // Escape HTML first
+  let html = escapeHtml(text);
+
+  // Code blocks (``` ... ```)
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
+    return '<pre><code>' + code.trim() + '</code></pre>';
+  });
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  // Bullet lists: collect consecutive lines starting with -
+  html = html.replace(/(^- .+$\n?)+/gm, function(block) {
+    const items = block.trim().split('\n').map(line => {
+      return '<li>' + line.replace(/^- /, '') + '</li>';
+    }).join('');
+    return '<ul>' + items + '</ul>';
+  });
+
+  // Action cards: [ACTION:title|content|buttons]
+  html = html.replace(/\[ACTION:([^|]+)\|([^|]+)\|([^\]]+)\]/g, function(_, title, content, buttons) {
+    const btns = buttons.split(',').map(b => {
+      const parts = b.trim().split(':');
+      const label = parts[0];
+      const style = parts[1] || 'muted-action';
+      return '<button class="btn-' + style + '">' + label + '</button>';
+    }).join('');
+    return '<div class="action-card"><div class="action-card-title">' + title +
+      '</div><div class="action-card-content">' + content +
+      '</div><div class="action-card-buttons">' + btns + '</div></div>';
+  });
+
+  // Line breaks (but not after block elements)
+  html = html.replace(/\n/g, '<br>');
+  // Clean up extra <br> after block elements
+  html = html.replace(/<\/(pre|ul|h3|h4)><br>/g, '</$1>');
+  html = html.replace(/<br><(pre|ul|h3|h4)/g, '<$1');
+
+  return html;
+}
+
+// ---- Section Toggle ----
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+}
+
+// ---- API Calls ----
+async function apiGet(path) {
+  try {
+    const resp = await fetch(path);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+async function apiPost(path, body) {
+  try {
+    const resp = await fetch(path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+async function loadConversation() {
+  const data = await apiGet('/api/chat');
+  if (data && Array.isArray(data)) {
+    const hadNew = data.length > lastConversationLength && lastConversationLength > 0;
+    conversation = data;
+    lastConversationLength = data.length;
+    renderConversation();
+    if (hadNew) scrollToBottom(true);
+  }
+}
+
+async function sendMessage(text) {
+  const data = await apiPost('/api/chat', {message: text});
+  return data;
+}
+
+async function loadGoals() {
+  const data = await apiGet('/api/goals');
+  if (data && Array.isArray(data)) {
+    allGoals = data;
+    renderGoals();
+  }
+}
+
+async function loadSignals() {
+  const data = await apiGet('/api/signals?limit=50');
+  if (data && Array.isArray(data)) {
+    allSignals = data;
+    renderSignals();
+  }
+}
+
+async function loadPending() {
+  const data = await apiGet('/api/pending');
+  if (data && Array.isArray(data)) {
+    allPending = data;
+    renderPending();
+  }
+}
+
+async function loadMemory() {
+  const data = await apiGet('/api/memory');
+  if (data && Array.isArray(data)) {
+    allMemory = data;
+    renderMemory();
+  }
+}
+
+async function loadActions() {
+  const data = await apiGet('/api/actions');
+  if (data && Array.isArray(data)) {
+    allActions = data;
+    renderActions();
+  }
+}
+
+async function loadAnalysis() {
+  const data = await apiGet('/api/analysis?limit=5');
+  if (data && Array.isArray(data)) {
+    allAnalysis = data;
+    renderAnalysis();
+  }
+}
+
+async function loadStatus() {
+  const data = await apiGet('/api/status');
+  if (data) {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    if (data.monitoring) {
+      dot.className = 'status-dot';
+      text.textContent = 'monitoring';
+    } else {
+      dot.className = 'status-dot stopped';
+      text.textContent = 'stopped';
+    }
+  }
+}
+
+// ---- Rendering ----
+function renderConversation() {
+  const el = document.getElementById('conversation');
+  let html = '';
+
+  if (conversation.length === 0) {
+    html = '<div class="welcome-msg">' + getGreeting() +
+      ', David. I\'m monitoring your desktop, messages, and email. ' +
+      'Ask me anything or I\'ll let you know when something needs your attention.</div>';
+  }
+
+  conversation.forEach(msg => {
+    const time = formatTime(msg.timestamp);
+    if (msg.role === 'user') {
+      html += '<div class="msg msg-user">' + escapeHtml(msg.content) +
+        '<div class="msg-time">' + time + '</div></div>';
+    } else if (msg.proactive) {
+      html += '<div class="msg msg-proactive"><span class="proactive-icon">\uD83D\uDD14</span>' +
+        renderMarkdown(msg.content) +
+        '<div class="msg-time">' + time + '</div></div>';
+    } else {
+      html += '<div class="msg msg-agent">' + renderMarkdown(msg.content) +
+        '<div class="msg-time">' + time + '</div></div>';
+    }
+  });
+
+  // Thinking indicator
+  html += '<div class="thinking" id="thinking"><div class="thinking-dots"><span></span><span></span><span></span></div> Thinking...</div>';
+
+  el.innerHTML = html;
+}
+
+function scrollToBottom(smooth) {
+  const el = document.getElementById('conversation');
+  if (smooth) {
+    el.scrollTo({top: el.scrollHeight, behavior: 'smooth'});
+  } else {
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function showThinking() {
+  const el = document.getElementById('thinking');
+  if (el) el.classList.add('visible');
+  scrollToBottom(true);
+}
+
+function hideThinking() {
+  const el = document.getElementById('thinking');
+  if (el) el.classList.remove('visible');
+}
+
+function renderGoals() {
+  const el = document.getElementById('goals-list');
+  if (!allGoals.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px">No goals yet</div>';
+    return;
+  }
+  let html = '';
+  allGoals.forEach(g => {
+    const proposed = g.proposed || g.status === 'proposed';
+    html += '<div class="goal-item' + (proposed ? ' proposed' : '') + '" onclick="talkAboutGoal(\'' + escapeHtml((g.name || g.title || '').replace(/'/g, "\\'")) + '\')">';
+    html += '<span class="goal-icon">' + (g.icon || '\uD83C\uDFAF') + '</span>';
+    html += '<span class="goal-name">' + escapeHtml(g.name || g.title || 'Untitled') + '</span>';
+    if (g.scope) html += '<span class="goal-scope">' + escapeHtml(g.scope) + '</span>';
+    if (proposed) {
+      html += '<div class="goal-actions">' +
+        '<button class="btn-accept" onclick="event.stopPropagation();acceptGoal(\'' + (g.id || '') + '\')">Accept</button>' +
+        '<button class="btn-reject" onclick="event.stopPropagation();rejectGoal(\'' + (g.id || '') + '\')">Reject</button>' +
+        '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderMemory() {
+  const el = document.getElementById('memory-list');
+  if (!allMemory.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px">No memory entries</div>';
+    return;
+  }
+  let html = '';
+  allMemory.forEach((m, i) => {
+    html += '<div class="memory-item" onclick="this.querySelector(\'.memory-text\').classList.toggle(\'expanded\')">';
+    if (m.scope) html += '<div class="memory-scope">' + escapeHtml(m.scope) + '</div>';
+    html += '<div class="memory-text">' + escapeHtml(m.text || m.content || JSON.stringify(m)) + '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderActions() {
+  const el = document.getElementById('actions-list');
+  const badge = document.getElementById('actions-badge');
+  if (!allActions.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px">No tracked actions</div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.textContent = allActions.length;
+  badge.style.display = '';
+  let html = '';
+  allActions.forEach(a => {
+    html += '<div class="action-item">';
+    html += '<div class="action-item-type">' + escapeHtml(a.type || 'action') + '</div>';
+    html += '<div class="action-item-title">' + escapeHtml(a.title || a.name || '') + '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderSignals() {
+  const el = document.getElementById('signal-feed');
+  const filter = document.getElementById('signal-filter').value;
+  const filtered = filter === 'all' ? allSignals : allSignals.filter(s => (s.source || '').toLowerCase() === filter);
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px;text-align:center">No signals yet</div>';
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(s => {
+    const src = (s.source || 'unknown').toLowerCase();
+    const srcClass = 'source-' + (['email','calendar','desktop','browser','slack'].includes(src) ? src : 'default');
+    html += '<div class="signal-entry">';
+    html += '<span class="signal-time">' + formatTime(s.timestamp) + '</span>';
+    html += '<span class="signal-source ' + srcClass + '">' + escapeHtml(src) + '</span>';
+    html += '<span class="signal-text">' + escapeHtml(s.text || s.summary || s.title || '') + '</span>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+
+  // Auto-scroll signal feed to bottom
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderAnalysis() {
+  const el = document.getElementById('analysis-list');
+  if (!allAnalysis.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px">No analysis yet</div>';
+    return;
+  }
+  let html = '';
+  allAnalysis.forEach(a => {
+    const matches = a.matches || a.matched || 0;
+    const skipped = a.skipped || 0;
+    html += '<div class="analysis-item" onclick="this.classList.toggle(\'expanded\')">';
+    html += '<div class="analysis-time">' + formatTime(a.timestamp) + '</div>';
+    html += '<div class="analysis-counts">';
+    html += '<span class="analysis-count matches">' + matches + ' matched</span>';
+    html += '<span class="analysis-count skipped">' + skipped + ' skipped</span>';
+    html += '</div>';
+    if (a.details || a.summary) {
+      html += '<div class="analysis-detail">' + escapeHtml(a.details || a.summary || '') + '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderPending() {
+  const el = document.getElementById('pending-list');
+  const badge = document.getElementById('pending-badge');
+  if (!allPending.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:11px">No pending actions</div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.textContent = allPending.length;
+  badge.style.display = '';
+  let html = '';
+  allPending.forEach(p => {
+    html += '<div class="pending-item">';
+    html += '<div class="pending-meta">';
+    html += '<span class="pending-type">' + escapeHtml(p.type || 'action') + '</span>';
+    if (p.goal) html += '<span class="pending-goal">' + escapeHtml(p.goal) + '</span>';
+    html += '</div>';
+    html += '<div class="pending-title">' + escapeHtml(p.title || p.name || '') + '</div>';
+    html += '<div class="pending-buttons">';
+    html += '<button class="btn-green" onclick="approvePending(\'' + (p.id || '') + '\')">Approve</button>';
+    html += '<button class="btn-muted-action" onclick="dismissPending(\'' + (p.id || '') + '\')">Dismiss</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ---- Chat ----
+async function handleSend() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || sending) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  sending = true;
+
+  // Add user message immediately
+  conversation.push({role: 'user', content: text, timestamp: new Date().toISOString()});
+  lastConversationLength = conversation.length;
+  renderConversation();
+  scrollToBottom();
+  showThinking();
+
+  // Send to API
+  const data = await sendMessage(text);
+
+  hideThinking();
+  sending = false;
+
+  if (data && data.response) {
+    conversation.push({
+      role: 'agent',
+      content: data.response,
+      timestamp: data.timestamp || new Date().toISOString(),
+      proactive: false,
+    });
+    lastConversationLength = conversation.length;
+    renderConversation();
+    scrollToBottom(true);
+  }
+}
+
+// ---- Actions ----
+function talkAboutGoal(name) {
+  const input = document.getElementById('chat-input');
+  input.value = "Let's talk about " + name;
+  input.focus();
+  handleSend();
+}
+
+function addGoal() {
+  const input = document.getElementById('chat-input');
+  input.value = 'I want to add a new goal: ';
+  input.focus();
+}
+
+async function acceptGoal(id) {
+  await apiPost('/api/goals/' + id + '/accept', {});
+  loadGoals();
+}
+
+async function rejectGoal(id) {
+  await apiPost('/api/goals/' + id + '/reject', {});
+  loadGoals();
+}
+
+async function approvePending(id) {
+  await apiPost('/api/pending/' + id + '/approve', {});
+  loadPending();
+}
+
+async function dismissPending(id) {
+  await apiPost('/api/pending/' + id + '/dismiss', {});
+  loadPending();
+}
+
+async function runAgents() {
+  await apiPost('/api/agents/run', {});
+}
+
+// ---- WebSocket ----
+function connectWS() {
+  try {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(proto + '//' + location.host + '/ws/signals');
+    ws.onopen = () => { wsConnected = true; };
+    ws.onclose = () => {
+      wsConnected = false;
+      setTimeout(connectWS, 5000);
+    };
+    ws.onerror = () => { ws.close(); };
+    ws.onmessage = (event) => {
+      try {
+        const signal = JSON.parse(event.data);
+        allSignals.push(signal);
+        // Keep last 200
+        if (allSignals.length > 200) allSignals = allSignals.slice(-200);
+        renderSignals();
+      } catch (e) {}
+    };
+  } catch (e) {
+    setTimeout(connectWS, 5000);
+  }
+}
+
+// ---- Input Handling ----
+const chatInput = document.getElementById('chat-input');
+
+chatInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
+});
+
+// Auto-resize textarea
+chatInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
 
 // ---- Init ----
-document.addEventListener('DOMContentLoaded', async () => {
+(async function init() {
+  // Load everything in parallel
   await Promise.all([
-    loadScopes(),
-    loadSignals(),
+    loadConversation(),
     loadGoals(),
-    loadProposed(),
+    loadSignals(),
     loadPending(),
     loadMemory(),
     loadActions(),
     loadAnalysis(),
-    loadSources(),
+    loadStatus(),
   ]);
-  renderGoals();
-  renderMemory();
-  renderAnalysis();
-  renderSignals();
-  checkMonitorStatus();
-  connectWebSocket();
+
+  // If conversation was empty, show welcome
+  if (conversation.length === 0) {
+    renderConversation();
+  }
+  scrollToBottom();
+
+  // Connect WebSocket
+  connectWS();
 
   // Polling
+  setInterval(loadConversation, 5000);
   setInterval(loadGoals, 30000);
-  setInterval(loadProposed, 30000);
   setInterval(loadPending, 30000);
   setInterval(loadAnalysis, 60000);
-  setInterval(checkMonitorStatus, 15000);
-
-  // Filters
-  document.getElementById('sourceFilter').addEventListener('change', e => {
-    currentSourceFilter = e.target.value;
-    renderSignals();
-  });
-  document.getElementById('searchFilter').addEventListener('input', e => {
-    currentSearchFilter = e.target.value.toLowerCase();
-    renderSignals();
-  });
-  document.getElementById('scopeFilter').addEventListener('change', e => {
-    currentScopeFilter = e.target.value;
-    renderGoals();
-    renderMemory();
-  });
-});
-
-// ---- Data loading ----
-async function loadScopes() {
-  try {
-    allScopes = await fetchJSON('/api/scopes');
-    const sel = document.getElementById('scopeFilter');
-    const goalSel = document.getElementById('goalScope');
-    sel.innerHTML = '<option value="">All Scopes</option>';
-    goalSel.innerHTML = '';
-    allScopes.forEach(s => {
-      const label = s.name || s.type;
-      const val = s.name || s.type;
-      sel.innerHTML += `<option value="${val}">${label}</option>`;
-      goalSel.innerHTML += `<option value="${s.type}|${s.name || ''}">${label}</option>`;
-    });
-  } catch(e) { console.error('loadScopes', e); }
-}
-
-async function loadSignals() {
-  try {
-    allSignals = await fetchJSON('/api/signals?limit=200');
-  } catch(e) { console.error('loadSignals', e); }
-}
-
-async function loadGoals() {
-  try {
-    allGoals = await fetchJSON('/api/goals');
-    renderGoals();
-  } catch(e) { console.error('loadGoals', e); }
-}
-
-async function loadProposed() {
-  try {
-    allProposed = await fetchJSON('/api/proposed');
-    renderGoals();
-  } catch(e) { console.error('loadProposed', e); }
-}
-
-async function loadMemory() {
-  try {
-    allMemory = await fetchJSON('/api/memory');
-    renderMemory();
-  } catch(e) { console.error('loadMemory', e); }
-}
-
-async function loadActions() {
-  try {
-    allActions = await fetchJSON('/api/actions');
-  } catch(e) { console.error('loadActions', e); }
-}
-
-async function loadPending() {
-  try {
-    allPending = await fetchJSON('/api/pending');
-    renderGoals();
-  } catch(e) { console.error('loadPending', e); }
-}
-
-async function loadAnalysis() {
-  try {
-    allAnalysis = await fetchJSON('/api/analysis?limit=50');
-    // Build a map of goal -> recent matches from analysis data
-    analysisMatches = [];
-    allAnalysis.forEach(a => {
-      (a.matches || []).forEach(m => {
-        analysisMatches.push({
-          ...m,
-          analysis_ts: a.timestamp || a.ts || '',
-        });
-      });
-      (a.skips || []).forEach(s => {
-        analysisMatches.push({
-          ...s,
-          matched: false,
-          confidence: 'none',
-          goal: null,
-          analysis_ts: a.timestamp || a.ts || '',
-        });
-      });
-    });
-    renderAnalysis();
-    updateLastAnalysis();
-  } catch(e) { console.error('loadAnalysis', e); }
-}
-
-async function loadSources() {
-  try {
-    const sources = await fetchJSON('/api/signals/sources');
-    const sel = document.getElementById('sourceFilter');
-    sel.innerHTML = '<option value="">all</option>';
-    sources.forEach(s => {
-      sel.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-  } catch(e) { console.error('loadSources', e); }
-}
-
-async function fetchJSON(url) {
-  const resp = await fetch(API + url);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return resp.json();
-}
-
-// ---- Monitor status ----
-function checkMonitorStatus() {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
-  if (allSignals.length > 0) {
-    const last = allSignals[allSignals.length - 1];
-    const ts = new Date(last.timestamp);
-    const age = (Date.now() - ts.getTime()) / 1000;
-    if (age < 30) {
-      dot.className = 'status-dot running';
-      txt.textContent = 'Monitor: running';
-    } else {
-      dot.className = 'status-dot';
-      txt.textContent = `Monitor: idle (${formatAge(age)} ago)`;
-    }
-  } else {
-    dot.className = 'status-dot';
-    txt.textContent = 'Monitor: no signals';
-  }
-}
-
-function updateLastAnalysis() {
-  const el = document.getElementById('lastAnalysis');
-  if (allAnalysis.length > 0) {
-    const last = allAnalysis[allAnalysis.length - 1];
-    const ts = last.timestamp || last.ts;
-    if (ts) {
-      const age = (Date.now() - new Date(ts).getTime()) / 1000;
-      el.textContent = `Last analysis: ${formatAge(age)} ago`;
-    }
-  }
-}
-
-function formatAge(seconds) {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-  return `${Math.round(seconds / 3600)}h`;
-}
-
-// ---- WebSocket ----
-let ws = null;
-function connectWebSocket() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws/signals`);
-  ws.onmessage = (event) => {
-    try {
-      const signal = JSON.parse(event.data);
-      allSignals.push(signal);
-      if (allSignals.length > 500) allSignals = allSignals.slice(-400);
-      appendSignalToFeed(signal);
-      checkMonitorStatus();
-    } catch(e) {}
-  };
-  ws.onclose = () => {
-    setTimeout(connectWebSocket, 3000);
-  };
-  ws.onerror = () => {};
-
-  // Send periodic pings
-  setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send('ping');
-    }
-  }, 30000);
-}
-
-// ---- Signal rendering ----
-function renderSignals() {
-  const feed = document.getElementById('signalFeed');
-  feed.innerHTML = '';
-  const filtered = filterSignals(allSignals);
-  filtered.forEach(sig => {
-    feed.appendChild(createSignalElement(sig));
-  });
-  feed.scrollTop = feed.scrollHeight;
-}
-
-function appendSignalToFeed(sig) {
-  if (!passesFilters(sig)) return;
-  const feed = document.getElementById('signalFeed');
-  feed.appendChild(createSignalElement(sig));
-  feed.scrollTop = feed.scrollHeight;
-}
-
-function filterSignals(signals) {
-  return signals.filter(passesFilters);
-}
-
-function passesFilters(sig) {
-  if (currentSourceFilter && sig.source !== currentSourceFilter) return false;
-  if (currentSearchFilter) {
-    const q = currentSearchFilter;
-    if (!(sig.text || '').toLowerCase().includes(q) &&
-        !(sig.sender || '').toLowerCase().includes(q)) return false;
-  }
-  return true;
-}
-
-function createSignalElement(sig) {
-  const wrapper = document.createDocumentFragment();
-
-  const item = document.createElement('div');
-  item.className = 'signal-item';
-
-  // Find match info from analysis
-  const matchInfo = findMatchForSignal(sig);
-  const matchLevel = matchInfo ? matchInfo.confidence : null;
-
-  // Timestamp
-  const time = document.createElement('span');
-  time.className = 'signal-time';
-  try {
-    const d = new Date(sig.timestamp);
-    time.textContent = d.toTimeString().slice(0, 8);
-  } catch(e) {
-    time.textContent = '--:--:--';
-  }
-  item.appendChild(time);
-
-  // Match dot
-  const dot = document.createElement('span');
-  dot.className = 'signal-match-dot';
-  if (matchLevel === 'high') dot.classList.add('high');
-  else if (matchLevel === 'medium') dot.classList.add('medium');
-  else dot.classList.add('hidden');
-  item.appendChild(dot);
-
-  // Source badge
-  const source = document.createElement('span');
-  source.className = `signal-source source-${sig.source || 'unknown'}`;
-  source.textContent = sig.source || '?';
-  item.appendChild(source);
-
-  // Content
-  const content = document.createElement('span');
-  content.className = 'signal-content';
-  if (sig.sender) {
-    const sender = document.createElement('span');
-    sender.className = 'signal-sender';
-    sender.textContent = sig.sender + ' ';
-    content.appendChild(sender);
-  }
-  const text = document.createElement('span');
-  text.className = 'signal-text';
-  text.textContent = sig.text || '';
-  content.appendChild(text);
-  item.appendChild(content);
-
-  // Detail panel (hidden until click)
-  const detail = document.createElement('div');
-  detail.className = 'signal-detail';
-  if (matchInfo) {
-    detail.innerHTML = `
-      <div class="signal-detail-row">
-        <span class="signal-detail-label">Goal:</span>
-        <span class="signal-detail-value">${matchInfo.goal || 'skipped (no match)'}</span>
-      </div>
-      <div class="signal-detail-row">
-        <span class="signal-detail-label">Confidence:</span>
-        <span class="signal-detail-value">
-          <span class="confidence-badge confidence-${matchInfo.confidence || 'none'}">${(matchInfo.confidence || 'none').toUpperCase()}</span>
-        </span>
-      </div>
-      <div class="signal-detail-row">
-        <span class="signal-detail-label">Reasoning:</span>
-        <span class="signal-detail-value">${escapeHtml(matchInfo.reasoning || 'No reasoning available')}</span>
-      </div>
-      ${matchInfo.action ? `
-      <div class="signal-detail-row">
-        <span class="signal-detail-label">Action:</span>
-        <span class="signal-detail-value">${escapeHtml(matchInfo.action)}</span>
-      </div>` : ''}
-    `;
-  } else {
-    detail.innerHTML = `
-      <div class="signal-detail-row">
-        <span class="signal-detail-label">Status:</span>
-        <span class="signal-detail-value" style="color:var(--muted)">Not yet analyzed</span>
-      </div>
-    `;
-  }
-
-  item.addEventListener('click', () => {
-    const isOpen = detail.classList.contains('open');
-    // Close all others
-    document.querySelectorAll('.signal-detail.open').forEach(el => el.classList.remove('open'));
-    document.querySelectorAll('.signal-item.expanded').forEach(el => el.classList.remove('expanded'));
-    if (!isOpen) {
-      detail.classList.add('open');
-      item.classList.add('expanded');
-    }
-  });
-
-  const container = document.createElement('div');
-  container.appendChild(item);
-  container.appendChild(detail);
-  return container;
-}
-
-function findMatchForSignal(sig) {
-  // Try to find in analysisMatches by matching signal_summary to sig text/sender
-  const sigText = (sig.text || '').toLowerCase();
-  const sigSender = (sig.sender || '').toLowerCase();
-
-  for (let i = analysisMatches.length - 1; i >= 0; i--) {
-    const m = analysisMatches[i];
-    const summary = (m.signal_summary || '').toLowerCase();
-    if (!summary) continue;
-    // Fuzzy match: check if signal text contains summary keywords or vice versa
-    if (sigText.includes(summary.slice(0, 30)) ||
-        summary.includes(sigText.slice(0, 30)) ||
-        (sigSender && summary.includes(sigSender))) {
-      return m;
-    }
-  }
-  return null;
-}
-
-// ---- Goals rendering ----
-function renderGoals() {
-  const panel = document.getElementById('goalsPanel');
-  panel.innerHTML = '';
-
-  // Proposed goals section
-  if (allProposed.length > 0) {
-    const section = document.createElement('div');
-    section.className = 'proposed-section';
-    section.innerHTML = `<div class="proposed-header">Proposed Goals (${allProposed.length})</div>`;
-    allProposed.forEach(pg => {
-      const item = document.createElement('div');
-      item.className = 'proposed-item';
-      item.innerHTML = `
-        <div class="proposed-info">
-          <div class="proposed-name">${escapeHtml(pg.name || 'Unnamed')}</div>
-          <div class="proposed-desc">${escapeHtml(pg.description || '')}</div>
-          ${(pg.key_people || []).length ? `<div class="proposed-people">People: ${pg.key_people.join(', ')}</div>` : ''}
-        </div>
-        <div class="proposed-actions">
-          <button class="btn btn-green" onclick="acceptProposed('${pg.id}')">Accept</button>
-          <button class="btn btn-red" onclick="rejectProposed('${pg.id}')">Reject</button>
-        </div>
-      `;
-      section.appendChild(item);
-    });
-    panel.appendChild(section);
-  }
-
-  // Pending actions section
-  if (allPending.length > 0) {
-    panel.appendChild(createPendingSection());
-  }
-
-  // Group goals by scope
-  const grouped = {};
-  allGoals.forEach(g => {
-    const key = g.scope_name || g.scope;
-    if (!grouped[key]) grouped[key] = { scope: g.scope, scope_name: g.scope_name, goals: [] };
-    grouped[key].goals.push(g);
-  });
-
-  // Determine scope order: personal first, then projects, then org
-  const scopeOrder = ['personal'];
-  Object.keys(grouped).forEach(k => { if (!scopeOrder.includes(k)) scopeOrder.push(k); });
-
-  scopeOrder.forEach(key => {
-    const group = grouped[key];
-    if (!group) return;
-    if (currentScopeFilter && key !== currentScopeFilter) return;
-
-    const section = document.createElement('div');
-    section.className = 'scope-section';
-
-    const header = document.createElement('div');
-    header.className = 'scope-header';
-    header.innerHTML = `<span class="scope-chevron open">&#9654;</span> ${escapeHtml(key)} <span style="color:var(--muted);font-weight:400;font-size:11px;margin-left:4px">(${group.goals.length})</span>`;
-    section.appendChild(header);
-
-    const body = document.createElement('div');
-    body.className = 'scope-body open';
-
-    group.goals.forEach(g => {
-      body.appendChild(createGoalCard(g));
-    });
-
-    // Actions for this scope
-    const scopeActions = allActions.find(a =>
-      (a.scope_name || a.scope) === key
-    );
-    if (scopeActions && scopeActions.content && scopeActions.content.trim().length > 20) {
-      const actDiv = document.createElement('div');
-      actDiv.style.cssText = 'padding: 6px 14px; border-top: 1px solid var(--border);';
-      actDiv.innerHTML = `
-        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;">Pending Actions</div>
-        <div class="memory-content" style="font-size:10px;max-height:120px;overflow-y:auto">${formatMarkdown(scopeActions.content)}</div>
-      `;
-      body.appendChild(actDiv);
-    }
-
-    section.appendChild(body);
-
-    header.addEventListener('click', () => {
-      body.classList.toggle('open');
-      header.querySelector('.scope-chevron').classList.toggle('open');
-    });
-
-    panel.appendChild(section);
-  });
-}
-
-function createGoalCard(goal) {
-  const card = document.createElement('div');
-  card.className = 'goal-card';
-
-  const statusClass = (goal.status || '').toLowerCase() === 'proposed' ? 'goal-status-proposed' : 'goal-status-active';
-
-  card.innerHTML = `
-    <div class="goal-top">
-      <span class="goal-icon">${goal.icon || ''}</span>
-      <span class="goal-name">${escapeHtml(goal.name)}</span>
-      <span class="goal-status ${statusClass}">${escapeHtml(goal.status || 'Active')}</span>
-      <button class="goal-delete" title="Delete goal" onclick="event.stopPropagation(); deleteGoal('${escapeAttr(goal.scope)}', ${goal.scope_name ? `'${escapeAttr(goal.scope_name)}'` : 'null'}, '${escapeAttr(goal.name)}')">&times;</button>
-    </div>
-    <div class="goal-desc">${escapeHtml(goal.description || '')}</div>
-    <div class="goal-people">
-      ${(goal.key_people || []).filter(p => p && p !== '(none specified)').map(p => `<span class="person-tag">${escapeHtml(p)}</span>`).join('')}
-    </div>
-  `;
-
-  // Click to expand description
-  const top = card.querySelector('.goal-top');
-  const desc = card.querySelector('.goal-desc');
-  top.addEventListener('click', () => desc.classList.toggle('open'));
-
-  // Recent matched signals for this goal
-  const goalMatches = analysisMatches
-    .filter(m => m.matched !== false && m.goal && m.goal.toLowerCase() === goal.name.toLowerCase())
-    .slice(-5);
-
-  if (goalMatches.length > 0) {
-    const matchDiv = document.createElement('div');
-    matchDiv.className = 'goal-matches';
-    matchDiv.innerHTML = `<div class="goal-matches-title">Recent Matches (${goalMatches.length})</div>`;
-
-    goalMatches.forEach(m => {
-      const mi = document.createElement('div');
-      mi.className = `goal-match-item ${m.confidence || 'none'}`;
-      mi.innerHTML = `
-        <div class="goal-match-signal">${escapeHtml(m.signal_summary || '')}</div>
-        <div class="goal-match-meta">
-          <span class="goal-match-reasoning">${escapeHtml(m.reasoning || '')}</span>
-          <span class="confidence-badge confidence-${m.confidence || 'none'}">${(m.confidence || 'none').toUpperCase()}</span>
-        </div>
-      `;
-      matchDiv.appendChild(mi);
-    });
-    card.appendChild(matchDiv);
-  }
-
-  return card;
-}
-
-// ---- Memory rendering ----
-function renderMemory() {
-  const tab = document.getElementById('memoryTab');
-  tab.innerHTML = '';
-
-  allMemory.forEach(m => {
-    const key = m.scope_name || m.scope;
-    if (currentScopeFilter && key !== currentScopeFilter) return;
-
-    const div = document.createElement('div');
-    div.className = 'memory-scope';
-    div.innerHTML = `
-      <div class="memory-scope-title">${escapeHtml(key)}</div>
-      <div class="memory-content">${formatMarkdown(m.content || '(empty)')}</div>
-    `;
-    tab.appendChild(div);
-  });
-
-  if (tab.children.length === 0) {
-    tab.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">No memory data</div>';
-  }
-}
-
-// ---- Analysis rendering ----
-function renderAnalysis() {
-  const tab = document.getElementById('analysisTab');
-  tab.innerHTML = '';
-
-  // Show most recent first
-  const sorted = [...allAnalysis].reverse();
-
-  sorted.forEach(a => {
-    const item = document.createElement('div');
-    item.className = 'analysis-item';
-
-    const ts = a.timestamp || a.ts || '';
-    let timeStr = '';
-    try { timeStr = new Date(ts).toLocaleString(); } catch(e) { timeStr = ts; }
-
-    const matches = (a.matches || []).length;
-    const skips = (a.skips || []).length;
-    const facts = (a.new_facts || []).length;
-    const commits = (a.commitments || []).length;
-    const proposed = (a.proposed_goals || []).length;
-
-    item.innerHTML = `
-      <div class="analysis-header">
-        <span class="analysis-time">${timeStr}</span>
-        <div class="analysis-stats">
-          <span class="analysis-stat"><b>${matches}</b> match${matches !== 1 ? 'es' : ''}</span>
-          <span class="analysis-stat"><b>${skips}</b> skip${skips !== 1 ? 's' : ''}</span>
-          <span class="analysis-stat"><b>${facts}</b> fact${facts !== 1 ? 's' : ''}</span>
-          <span class="analysis-stat"><b>${commits}</b> commit${commits !== 1 ? 's' : ''}</span>
-          ${proposed > 0 ? `<span class="analysis-stat" style="color:var(--amber)"><b>${proposed}</b> proposed</span>` : ''}
-        </div>
-      </div>
-      <div class="analysis-detail">
-        <pre>${escapeHtml(JSON.stringify(a, null, 2))}</pre>
-      </div>
-    `;
-
-    item.addEventListener('click', () => {
-      item.querySelector('.analysis-detail').classList.toggle('open');
-    });
-
-    tab.appendChild(item);
-  });
-
-  if (sorted.length === 0) {
-    tab.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">No analysis history</div>';
-  }
-}
-
-// ---- Tab switching ----
-function switchTab(name, tabEl) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  tabEl.classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById(name + 'Tab').classList.add('active');
-}
-
-// ---- Actions: accept/reject proposed, add/delete goals ----
-async function acceptProposed(id) {
-  try {
-    await fetch(`${API}/api/proposed/${id}/accept`, { method: 'POST' });
-    await Promise.all([loadProposed(), loadGoals()]);
-  } catch(e) { console.error('acceptProposed', e); }
-}
-
-async function rejectProposed(id) {
-  try {
-    await fetch(`${API}/api/proposed/${id}/reject`, { method: 'POST' });
-    await loadProposed();
-  } catch(e) { console.error('rejectProposed', e); }
-}
-
-function openAddGoal() {
-  document.getElementById('addGoalModal').classList.add('open');
-}
-
-function closeAddGoal() {
-  document.getElementById('addGoalModal').classList.remove('open');
-}
-
-async function submitGoal() {
-  const scopeVal = document.getElementById('goalScope').value;
-  const [scope, scopeName] = scopeVal.split('|');
-  const body = {
-    scope,
-    scope_name: scopeName || null,
-    name: document.getElementById('goalName').value,
-    description: document.getElementById('goalDesc').value,
-    key_people: document.getElementById('goalPeople').value
-      .split(',').map(s => s.trim()).filter(Boolean),
-    icon: document.getElementById('goalIcon').value,
-  };
-
-  if (!body.name) { alert('Name is required'); return; }
-
-  try {
-    await fetch(`${API}/api/goals`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    closeAddGoal();
-    // Clear form
-    document.getElementById('goalName').value = '';
-    document.getElementById('goalDesc').value = '';
-    document.getElementById('goalPeople').value = '';
-    document.getElementById('goalIcon').value = '';
-    await loadGoals();
-  } catch(e) { console.error('submitGoal', e); }
-}
-
-async function deleteGoal(scope, scopeName, name) {
-  if (!confirm(`Delete goal "${name}"?`)) return;
-  try {
-    await fetch(`${API}/api/goals`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scope, scope_name: scopeName, name }),
-    });
-    await loadGoals();
-  } catch(e) { console.error('deleteGoal', e); }
-}
-
-// ---- Pending Actions ----
-let pendingCollapsed = false;
-
-function createPendingSection() {
-  const section = document.createElement('div');
-  section.className = 'pending-section';
-
-  const header = document.createElement('div');
-  header.className = 'pending-header';
-  header.innerHTML = `
-    <span class="scope-chevron ${pendingCollapsed ? '' : 'open'}">&#9654;</span>
-    Pending Actions
-    <span class="pending-count">${allPending.length}</span>
-    <span class="pending-header-spacer"></span>
-  `;
-
-  const runBtn = document.createElement('button');
-  runBtn.className = 'btn btn-primary';
-  runBtn.style.cssText = 'font-size:10px;padding:2px 8px;';
-  runBtn.textContent = 'Run Agents';
-  runBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    runAgents(runBtn);
-  });
-  header.appendChild(runBtn);
-
-  section.appendChild(header);
-
-  const body = document.createElement('div');
-  body.className = `pending-body ${pendingCollapsed ? '' : 'open'}`;
-
-  allPending.forEach(p => {
-    body.appendChild(createPendingItem(p));
-  });
-
-  section.appendChild(body);
-
-  header.addEventListener('click', (e) => {
-    if (e.target.closest('.btn')) return;
-    pendingCollapsed = !pendingCollapsed;
-    body.classList.toggle('open');
-    header.querySelector('.scope-chevron').classList.toggle('open');
-  });
-
-  return section;
-}
-
-function createPendingItem(p) {
-  const item = document.createElement('div');
-  item.className = `pending-item priority-${p.priority || 'low'}`;
-
-  const typeBadgeClass = `pending-type-${(p.type || 'suggestion').replace(/\s+/g, '_')}`;
-
-  let html = `
-    <div class="pending-meta">
-      <span class="pending-type-badge ${typeBadgeClass}">${escapeHtml(p.type || 'suggestion')}</span>
-      <span class="pending-goal-name">${escapeHtml(p.goal_name || '')}</span>
-      <span class="pending-priority-badge pending-priority-${p.priority || 'low'}">${(p.priority || 'low').toUpperCase()}</span>
-    </div>
-    <div class="pending-title">${escapeHtml(p.title || 'Untitled')}</div>
-  `;
-
-  if (p.description) {
-    html += `<div class="pending-desc">${escapeHtml(p.description)}</div>`;
-  }
-
-  if (p.recipient) {
-    html += `<div class="pending-recipient">To: ${escapeHtml(p.recipient)}</div>`;
-  }
-
-  if (p.content) {
-    const preview = p.content.length > 200 ? p.content.slice(0, 200) : p.content;
-    html += `<div class="pending-content-preview" data-full="${escapeAttr(p.content)}" onclick="togglePendingContent(this)">${escapeHtml(preview)}</div>`;
-  }
-
-  html += `
-    <div class="pending-actions-row">
-      <button class="btn btn-green" onclick="approvePending('${escapeAttr(p.id)}', '${escapeAttr(p.type || '')}', '${escapeAttr(p.recipient || '')}')">Approve &#10003;</button>
-      <button class="btn btn-yellow" onclick="editPending('${escapeAttr(p.id)}', '${escapeAttr(p.content || '')}')">Edit &#9998;</button>
-      <button class="btn btn-red" onclick="dismissPending('${escapeAttr(p.id)}', '${escapeAttr(p.title || '')}')">Dismiss &#10007;</button>
-    </div>
-  `;
-
-  item.innerHTML = html;
-  return item;
-}
-
-function togglePendingContent(el) {
-  if (el.classList.contains('expanded')) {
-    el.classList.remove('expanded');
-    const full = el.getAttribute('data-full') || '';
-    el.textContent = full.length > 200 ? full.slice(0, 200) : full;
-  } else {
-    el.classList.add('expanded');
-    el.textContent = el.getAttribute('data-full') || '';
-  }
-}
-
-async function approvePending(id, type, recipient) {
-  if (type === 'draft_email' || type === 'draft_message') {
-    const target = recipient || 'the recipient';
-    if (!confirm(`Send this to ${target}?`)) return;
-  }
-  try {
-    await fetch(`${API}/api/pending/${id}/approve`, { method: 'POST' });
-    await loadPending();
-  } catch(e) { console.error('approvePending', e); }
-}
-
-function editPending(id, content) {
-  document.getElementById('editPendingId').value = id;
-  // Decode the escaped content back
-  const tmp = document.createElement('textarea');
-  tmp.innerHTML = content;
-  document.getElementById('editPendingContent').value = tmp.value;
-  document.getElementById('editPendingModal').classList.add('open');
-}
-
-function closeEditPending() {
-  document.getElementById('editPendingModal').classList.remove('open');
-}
-
-async function submitEditPending() {
-  const id = document.getElementById('editPendingId').value;
-  const content = document.getElementById('editPendingContent').value;
-  try {
-    await fetch(`${API}/api/pending/${id}/edit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
-    closeEditPending();
-    await loadPending();
-  } catch(e) { console.error('submitEditPending', e); }
-}
-
-async function dismissPending(id, title) {
-  if (!confirm(`Dismiss "${title}"?`)) return;
-  try {
-    await fetch(`${API}/api/pending/${id}/dismiss`, { method: 'POST' });
-    await loadPending();
-  } catch(e) { console.error('dismissPending', e); }
-}
-
-async function runAgents(btn) {
-  const origText = btn.textContent;
-  btn.disabled = true;
-  btn.innerHTML = 'Running<span class="pending-spinner"></span>';
-  try {
-    await fetch(`${API}/api/agents/run`, { method: 'POST' });
-    await loadPending();
-  } catch(e) {
-    console.error('runAgents', e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = origText;
-  }
-}
-
-// ---- Helpers ----
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function escapeAttr(str) {
-  return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-}
-
-function formatMarkdown(text) {
-  // Very simple markdown -> HTML
-  return escapeHtml(text)
-    .replace(/^### (.+)$/gm, '<strong style="color:var(--text)">$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong style="color:var(--text);font-size:12px">$1</strong>')
-    .replace(/^# (.+)$/gm, '<strong style="color:var(--accent);font-size:13px">$1</strong>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
-    .replace(/^- \[x\] (.+)$/gm, '<span style="color:var(--green)">&#10003; $1</span>')
-    .replace(/^- \[ \] (.+)$/gm, '<span style="color:var(--yellow)">&#9744; $1</span>')
-    .replace(/^- (.+)$/gm, '&bull; $1')
-    .replace(/\n/g, '<br>');
-}
+  setInterval(loadSignals, 15000);
+  setInterval(loadStatus, 30000);
+})();
 </script>
+
 </body>
 </html>

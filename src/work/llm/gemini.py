@@ -180,7 +180,7 @@ Return ONLY the JSON array."""
         """Analyze signals against goals and extract memory/actions in one call.
 
         Args:
-            signals_text: All signals from the last 5 minutes, one per line.
+            signals_text: All unanalyzed signals since last analysis cycle, one per line.
             goals_text: All goals across all scopes.
             existing_memories: Dict of scope label -> existing memory.md content.
 
@@ -200,7 +200,7 @@ GOALS (organized by scope -- personal, projects/<name>, org/<name>):
 EXISTING MEMORY (already persisted -- do NOT repeat these facts):
 {memory_context}
 
-SIGNALS FROM THE LAST 5 MINUTES:
+SIGNALS (timestamped — use timestamps to understand conversation flow and related events):
 {signals_text}
 
 Analyze every signal and return a JSON object with these keys:
@@ -259,6 +259,9 @@ RULES:
 - Only extract facts NOT already in existing memory. Check carefully.
 - Identify commitments: "I'll...", "by Friday", deadline language, task assignments.
 - Only propose goals when 2+ signals form a clear pattern. Be specific in naming.
+- TIMESTAMPS MATTER: Messages within minutes of each other from the same person or thread are likely part of one conversation. A reply at 12:41 relates to a message at 12:38.
+- GROUP RELATED SIGNALS: Multiple signals about the same topic (e.g. several real estate signals over an hour) should be analyzed together, not individually.
+- CONVERSATION CONTEXT: When you see a reply from someone, look for the original message in earlier signals. "I'm not going to" only makes sense if you see what was asked.
 
 COMPOUND PATTERNS to watch for:
 - New Google Doc/Sheet + shared with people + calendar event = New project starting

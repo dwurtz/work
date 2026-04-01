@@ -208,10 +208,10 @@ class MonitorLoop:
         """Combined analysis + compaction: match signals, extract facts, update memory/actions."""
         self.phase = "THINKING"
 
-        # 1. Read last 5 minutes of signals from log
+        # 1. Read all unanalyzed signals (since last analysis marker)
         loop = asyncio.get_running_loop()
-        signals_text = await loop.run_in_executor(
-            None, self.collector.get_recent_signals_from_log, 5
+        signals_text, analysis_marker = await loop.run_in_executor(
+            None, self.collector.get_unanalyzed_signals_from_log
         )
 
         if not signals_text.strip():
@@ -350,6 +350,36 @@ class MonitorLoop:
                 pg.get("description", ""),
             )
 
+        # Build proactive conversation message if anything important happened
+        proactive_parts = []
+        for match in matches:
+            if match.get("confidence") in ("medium", "high"):
+                proactive_parts.append(
+                    f"**[{match.get('confidence', '?').upper()}] {match.get('goal', '?')}:** "
+                    f"{match.get('signal_summary', '')} — {match.get('reasoning', '')}"
+                )
+                if match.get("action"):
+                    proactive_parts.append(f"  → Suggested: {match['action']}")
+
+        for fact in new_facts:
+            proactive_parts.append(f"📝 New fact: {fact.get('fact', '')}")
+
+        for commitment in commitments:
+            proactive_parts.append(
+                f"🤝 Commitment: {commitment.get('commitment', '')}"
+                + (f" (due: {commitment['deadline']})" if commitment.get('deadline') else "")
+            )
+
+        for pg in proposed_goals:
+            proactive_parts.append(
+                f"🆕 **New goal detected: {pg.get('name', '?')}** — {pg.get('description', '')}\n"
+                f"Say 'yes' to add this goal, or 'no' to dismiss."
+            )
+
+        if proactive_parts:
+            message = "\n\n".join(proactive_parts)
+            self._post_to_conversation(message)
+
         # Log analysis results
         analysis_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -375,12 +405,34 @@ class MonitorLoop:
         except Exception:
             log.exception("Goal agents failed")
 
+        # Save analysis marker so these signals aren't re-analyzed next cycle
+        if analysis_marker:
+            self.collector.save_analysis_marker(analysis_marker)
+
         self.last_analysis_time = datetime.now(timezone.utc)
         self.phase = "IDLE"
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _post_to_conversation(content: str) -> None:
+        """Post a proactive message to the conversation log."""
+        import json as _json
+        from work.config import WORK_HOME as _wh
+        conv_path = _wh / "conversation.json"
+        try:
+            messages = _json.loads(conv_path.read_text()) if conv_path.exists() else []
+            messages.append({
+                "role": "agent",
+                "content": content,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "proactive": True,
+            })
+            conv_path.write_text(_json.dumps(messages, indent=2))
+        except Exception:
+            log.exception("Failed to post to conversation")
 
     @staticmethod
     def _parse_scope(scope_str: str) -> tuple[str, str | None]:

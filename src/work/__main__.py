@@ -612,6 +612,12 @@ def main() -> None:
         case "pending":
             cmd_pending(args)
         case "web":
+            console.print(Panel(
+                "[bold]work web[/bold]\n"
+                f"[dim]Dashboard: http://127.0.0.1:{args.port}[/dim]\n"
+                "[dim]Monitor starting automatically...[/dim]",
+                border_style="bright_blue",
+            ))
             from work.web.server import start
             start(port=args.port)
         case _:

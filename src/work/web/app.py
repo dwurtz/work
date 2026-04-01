@@ -21,6 +21,8 @@ from pydantic import BaseModel
 from work.config import WORK_HOME
 from work.context.scopes import ScopeManager
 from work.context.store import ContextStore
+from work.llm import GeminiClient
+from work.signals import SignalCollector
 
 app = FastAPI(title="work dashboard", version="0.1.0")
 
@@ -509,6 +511,164 @@ async def run_agents() -> dict:
     gemini = GeminiClient()
     actions_count = await run_all_goal_agents(gemini, scope_manager)
     return {"actions_produced": actions_count}
+
+
+# ---------------------------------------------------------------------------
+# Conversation (chat)
+# ---------------------------------------------------------------------------
+
+CONVERSATION_PATH = WORK_HOME / "conversation.json"
+
+
+def _load_conversation() -> list[dict]:
+    if CONVERSATION_PATH.exists():
+        try:
+            return json.loads(CONVERSATION_PATH.read_text())
+        except (json.JSONDecodeError, ValueError):
+            return []
+    return []
+
+
+def _save_conversation(messages: list[dict]):
+    WORK_HOME.mkdir(parents=True, exist_ok=True)
+    CONVERSATION_PATH.write_text(json.dumps(messages, indent=2))
+
+
+@app.get("/api/chat")
+async def get_chat(limit: int = 50):
+    """Get conversation history."""
+    messages = _load_conversation()
+    return messages[-limit:]
+
+
+@app.post("/api/chat")
+async def post_chat(body: dict):
+    """Send a message to the agent, get a response."""
+    user_message = body.get("message", "")
+
+    messages = _load_conversation()
+    messages.append({
+        "role": "user",
+        "content": user_message,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+    # Build full context for the agent
+    sm = ScopeManager(WORK_HOME)
+    gemini = GeminiClient()
+
+    # Get all context
+    goals = sm.all_goals()
+
+    memories = ""
+    actions_text = ""
+    for st, n in sm.list_scopes():
+        store = sm.get_store(st, n)
+        label = f"{st}/{n}" if n else st
+        mem = store.read_memory()
+        act = store.read_actions()
+        if mem.strip():
+            memories += f"\n--- {label} ---\n{mem[-1500:]}\n"
+        if act.strip():
+            actions_text += f"\n--- {label} ---\n{act[-500:]}\n"
+
+    # Get recent signals
+    collector = SignalCollector()
+    recent = collector.get_recent_signals_from_log(minutes=30)
+
+    # Get pending actions
+    pending = []
+    pending_path = WORK_HOME / "pending_actions.json"
+    if pending_path.exists():
+        try:
+            pending = json.loads(pending_path.read_text())
+            pending = [p for p in pending if p.get("status") == "pending"]
+        except (json.JSONDecodeError, ValueError):
+            pending = []
+
+    # Build conversation history for Gemini
+    history_for_model = []
+    for msg in messages[-20:]:  # last 20 messages for context
+        if msg["role"] == "user":
+            history_for_model.append(f"User: {msg['content']}")
+        elif msg["role"] == "agent":
+            history_for_model.append(f"Agent: {msg['content']}")
+
+    context = f"""You are a personal productivity agent for David. You have been monitoring his desktop, messages, email, and calendar. You know his goals, his memory, and his recent activity. You are having a conversation with him.
+
+GOALS:
+{goals}
+
+MEMORY:
+{memories if memories.strip() else "(no memory entries yet)"}
+
+CURRENT ACTIONS:
+{actions_text if actions_text.strip() else "(no actions tracked yet)"}
+
+RECENT SIGNALS (last 30 min):
+{recent[-3000:] if recent else "(no recent signals)"}
+
+PENDING ACTIONS FROM SUB-AGENTS ({len(pending)} pending):
+{json.dumps(pending[:5], indent=2) if pending else "(none)"}
+
+CONVERSATION HISTORY:
+{chr(10).join(history_for_model[-10:])}
+
+INSTRUCTIONS:
+- Be concise and direct. You know David personally from monitoring his life.
+- Reference specific signals, people, and events you've observed.
+- When suggesting actions that contact people (email, text), present them as drafts with [Send] [Edit] [Skip] options. Format these as markdown.
+- When reporting sub-agent work, include the results inline.
+- Never fabricate information. Only reference signals and facts you actually have.
+- You can suggest creating goals, updating memory, or triggering sub-agents.
+- Use markdown formatting for readability.
+
+Respond to David's latest message."""
+
+    # Call Gemini
+    from google.genai import types
+
+    resp = await gemini.client.aio.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=context,
+        config=types.GenerateContentConfig(
+            max_output_tokens=2048,
+            temperature=0.4,
+        ),
+    )
+
+    agent_response = resp.text if resp.text else "I couldn't generate a response. Try again."
+
+    messages.append({
+        "role": "agent",
+        "content": agent_response,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+    _save_conversation(messages)
+
+    return {"response": agent_response}
+
+
+@app.post("/api/chat/proactive")
+async def post_proactive(body: dict):
+    """Add a proactive message from the system (called by monitor/agents)."""
+    messages = _load_conversation()
+    messages.append({
+        "role": "agent",
+        "content": body.get("content", ""),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "proactive": True,
+    })
+    _save_conversation(messages)
+    return {"ok": True}
+
+
+@app.delete("/api/chat")
+async def clear_chat():
+    """Clear conversation history."""
+    _save_conversation([])
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

@@ -240,6 +240,56 @@ class SignalCollector:
         except Exception:
             log.exception("Failed to persist signal")
 
+    def get_unanalyzed_signals_from_log(self) -> tuple[str, str]:
+        """Read all signals since the last analysis marker.
+
+        Returns (signals_text, marker_to_set) where marker_to_set is the
+        timestamp to write to the marker file after successful analysis.
+        """
+        marker_path = WORK_HOME / "last_analysis_marker"
+        last_marker = ""
+        if marker_path.exists():
+            last_marker = marker_path.read_text().strip()
+
+        if not self._signal_log_path.exists():
+            return "", ""
+
+        lines = []
+        latest_ts = ""
+        with open(self._signal_log_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                    ts = d.get("timestamp", "")
+                    if ts > last_marker:
+                        source = d.get("source", "?")
+                        sender = d.get("sender", "?")
+                        text = d.get("text", "")[:200]
+                        # Include full ISO timestamp so the model can reason about timing
+                        lines.append(f"[{ts}] [{source}] {sender}: {text}")
+                        latest_ts = ts
+                except json.JSONDecodeError:
+                    continue
+
+        # If too many signals, keep the most recent 200 but include a summary of older ones
+        if len(lines) > 200:
+            older = lines[:-200]
+            recent = lines[-200:]
+
+            # Compress older signals into a summary
+            older_summary = f"({len(older)} older signals omitted — earliest: {older[0][:25]})"
+            lines = [older_summary] + recent
+
+        return "\n".join(lines), latest_ts
+
+    def save_analysis_marker(self, marker: str) -> None:
+        """Save the analysis marker timestamp."""
+        marker_path = WORK_HOME / "last_analysis_marker"
+        marker_path.write_text(marker)
+
     def get_recent_signals_from_log(self, minutes: int = 5) -> str:
         """Read signal_log.jsonl and return all signals from the last N minutes as formatted text."""
         from datetime import timedelta
