@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import json
 from collections import deque
 from datetime import datetime
+from pathlib import Path
 
-from work.config import IGNORED_APPS, SCREENSHOT_APPS
+from work.config import IGNORED_APPS, SCREENSHOT_APPS, WORK_HOME
 from work.signals.active_app import get_active_app
 from work.signals.chrome import collect_chrome_tabs
 from work.signals.clipboard import collect_clipboard
@@ -21,13 +23,15 @@ log = logging.getLogger(__name__)
 class SignalCollector:
     """Collects signals from all sources, deduplicating across calls."""
 
-    def __init__(self, history_size: int = 100) -> None:
+    def __init__(self, history_size: int = 10000) -> None:
         self._seen_ids: set[str] = set()
         self._last_app: str = ""
         self._last_title: str = ""
         self._screenshot_counter: int = 0
         self._screenshot_every: int = 1  # screenshot every collection cycle (~2s)
         self.recent_history: deque[Signal] = deque(maxlen=history_size)
+        self._signal_log_path = WORK_HOME / "signal_log.jsonl"
+        self._load_history()
 
     def collect_all(self) -> list[Signal]:
         """
@@ -105,19 +109,91 @@ class SignalCollector:
                 self._seen_ids.add(sig.id_key)
                 new_signals.append(sig)
                 self.recent_history.append(sig)
+                self._persist_signal(sig)
 
         return new_signals
 
-    def get_unmatched_history_summary(self, matched_ids: set[str]) -> str:
-        """Return a text summary of recent signals that were NOT matched to any goal."""
+    def get_unmatched_history_summary(self, matched_ids: set[str], max_recent: int = 50, max_older: int = 30) -> str:
+        """Return a summary of unmatched signals: recent ones in detail, older ones compressed by theme."""
         unmatched = [s for s in self.recent_history if s.id_key not in matched_ids]
         if not unmatched:
             return ""
+
+        now = datetime.now()
+        recent = []   # last hour
+        older = []    # older than 1 hour
+
+        for s in unmatched:
+            age = (now - s.timestamp).total_seconds()
+            if age < 3600:
+                recent.append(s)
+            else:
+                older.append(s)
+
         lines = []
-        for s in unmatched[-30:]:  # last 30 unmatched
-            ts = s.timestamp.strftime("%H:%M")
-            lines.append(f"[{ts}] [{s.source}] {s.sender}: {s.text[:100]}")
+
+        # Recent: show detail
+        if recent:
+            lines.append("RECENT (last hour):")
+            for s in recent[-max_recent:]:
+                ts = s.timestamp.strftime("%H:%M")
+                lines.append(f"  [{ts}] [{s.source}] {s.sender}: {s.text[:100]}")
+
+        # Older: compress — just show source counts and sample texts
+        if older:
+            lines.append(f"\nOLDER ({len(older)} signals over past sessions):")
+            # Group by date
+            by_date: dict[str, list[Signal]] = {}
+            for s in older[-500:]:  # last 500 older signals
+                day = s.timestamp.strftime("%b %d")
+                by_date.setdefault(day, []).append(s)
+            for day, sigs in sorted(by_date.items()):
+                samples = [s.text[:60] for s in sigs[-max_older:]]
+                lines.append(f"  {day} ({len(sigs)} signals): {'; '.join(samples[:5])}")
+
         return "\n".join(lines)
+
+    def _load_history(self) -> None:
+        """Load recent signal history from disk on startup."""
+        if not self._signal_log_path.exists():
+            return
+        try:
+            with open(self._signal_log_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                        sig = Signal(
+                            source=d["source"],
+                            sender=d["sender"],
+                            text=d["text"],
+                            timestamp=datetime.fromisoformat(d["timestamp"]),
+                            id_key=d["id_key"],
+                        )
+                        self.recent_history.append(sig)
+                        self._seen_ids.add(sig.id_key)
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+            log.info("Loaded %d signals from history", len(self.recent_history))
+        except Exception:
+            log.exception("Failed to load signal history")
+
+    def _persist_signal(self, sig: Signal) -> None:
+        """Append a signal to the on-disk log."""
+        try:
+            WORK_HOME.mkdir(parents=True, exist_ok=True)
+            with open(self._signal_log_path, "a") as f:
+                f.write(json.dumps({
+                    "source": sig.source,
+                    "sender": sig.sender,
+                    "text": sig.text[:500],
+                    "timestamp": sig.timestamp.isoformat(),
+                    "id_key": sig.id_key,
+                }) + "\n")
+        except Exception:
+            log.exception("Failed to persist signal")
 
     def should_screenshot(self, app: str, title: str) -> bool:
         """Return True if app/title changed since last check."""
