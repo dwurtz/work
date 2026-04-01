@@ -76,7 +76,7 @@ Output a JSON array — one entry per signal:
 [
   {{
     "signal_summary": "brief description of the signal",
-    "source": "imessage|whatsapp|chrome|clipboard|screen|calendar|email|observation",
+    "source": "imessage|whatsapp|chrome|clipboard|screen|calendar|email|drive|tasks|observation",
     "matched": true,
     "reasoning": "1-2 sentence explanation of WHY this matches or doesn't match any goal",
     "scope": "personal|projects/<project_name>|org/<org_name> (or null if no match)",
@@ -122,6 +122,25 @@ GOAL INFERENCE:
     }}
   }}
 - Only propose a goal when 2+ signals form a clear pattern. Don't propose for single isolated signals.
+
+COMPOUND PATTERNS that strongly suggest goals (look for these in the combined new + historical signals):
+- New Google Doc/Sheet + shared with people + calendar event with same people = New project starting
+- 5+ emails from same sender + calendar event with them = Active deal or negotiation
+- Real estate tabs + address searches + partner messages = House hunting
+- Recruiter email + company research + resume doc activity = Job search
+- Flight/hotel booking + calendar blocks + partner messages = Trip planning
+- Repeated visits to same tutorial/course site = Learning a new skill
+- School/activity emails + calendar events + partner messages = Child activity coordination
+- Invoice emails + contractor messages + store/vendor tabs = Home project
+- Same doc opened 3+ times without edits = Blocked or under review
+- Same person messaged 3+ days running = Active collaboration
+- Calendar event rescheduled 2+ times = Struggling to schedule something
+- New Google Doc created = Possible new initiative (watch for follow-up signals)
+- Task assigned or action item in meeting = Commitment that needs tracking
+- Email draft saved but not sent = Intention with friction
+- "I'll..." or "by Friday" or deadline language in any message = Commitment with timeline
+
+When you see these patterns, propose a goal. Be specific in the proposed goal name — "Palo Alto Rental Search" not "Real Estate Activity". Include detected key people.
 
 Return ONLY the JSON array."""
 

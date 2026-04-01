@@ -23,6 +23,8 @@ SOURCE_COLORS = {
     "calendar": "bright_green",
     "active_app": "bright_blue",
     "email": "bright_cyan",
+    "drive": "bright_magenta",
+    "tasks": "bright_white",
 }
 
 CONFIDENCE_COLORS = {

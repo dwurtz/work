@@ -13,9 +13,11 @@ from work.signals.active_app import get_active_app
 from work.signals.calendar import collect_upcoming_events
 from work.signals.chrome import collect_chrome_tabs
 from work.signals.clipboard import collect_clipboard
+from work.signals.drive import collect_recent_drive_activity
 from work.signals.email import collect_recent_emails
 from work.signals.imessage import collect_imessages
 from work.signals.screenshot import capture_screenshot_if_changed
+from work.signals.tasks import collect_pending_tasks
 from work.signals.types import Signal
 from work.signals.whatsapp import collect_whatsapp
 
@@ -33,7 +35,9 @@ class SignalCollector:
         self._screenshot_every: int = 1  # screenshot every collection cycle (~2s)
         self._email_counter: int = 0
         self._calendar_counter: int = 0
-        self._gws_every: int = 5  # run email/calendar every 5th cycle (~15s)
+        self._drive_counter: int = 0
+        self._tasks_counter: int = 0
+        self._gws_every: int = 5  # run email/calendar/drive/tasks every 5th cycle (~15s)
         self.recent_history: deque[Signal] = deque(maxlen=history_size)
         self._signal_log_path = WORK_HOME / "signal_log.jsonl"
         self._load_history()
@@ -110,6 +114,24 @@ class SignalCollector:
                 raw.extend(collect_upcoming_events())
             except Exception:
                 log.exception("Calendar collector error")
+
+        # Drive — every 5th cycle
+        self._drive_counter += 1
+        if self._drive_counter >= self._gws_every:
+            self._drive_counter = 0
+            try:
+                raw.extend(collect_recent_drive_activity())
+            except Exception:
+                log.exception("Drive collector error")
+
+        # Tasks — every 5th cycle
+        self._tasks_counter += 1
+        if self._tasks_counter >= self._gws_every:
+            self._tasks_counter = 0
+            try:
+                raw.extend(collect_pending_tasks())
+            except Exception:
+                log.exception("Tasks collector error")
 
         # Screenshot — on context change OR every ~10 seconds
         try:

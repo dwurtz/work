@@ -310,6 +310,8 @@ SOURCE_COLORS = {
     "active_app": "bright_blue",
     "email": "bright_cyan",
     "calendar": "bright_green",
+    "drive": "bright_magenta",
+    "tasks": "bright_white",
 }
 
 
